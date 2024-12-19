@@ -1,6 +1,5 @@
 import tkinter as tk
 import ttkbootstrap as tkk
-import Destroy
 
 
 class GUI():
@@ -18,4 +17,11 @@ class GUI():
         pass
 
     def check_username(self, username, password, name):
+        pass
+
+
+def destroy(self):
+    try:
+        self.app.destroy()
+    except Exception:
         pass
