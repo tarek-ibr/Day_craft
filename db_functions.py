@@ -290,6 +290,26 @@ def get_team_tasks(teamname):
     finally:
         conn.close()
 
+def get_team_users(teamname):
+    conn = sqlite3.connect('db.sqlite')
+    c = conn.cursor()
+
+    try:
+        # Correctly pass the username as a single-element tuple
+        c.execute("SELECT * FROM users WHERE team = ?", (teamname,))
+        users = c.fetchall()
+        users_list= []
+
+        for user in users:
+            users_list.append(user[0])
+
+        return users_list
+    except sqlite3.Error as e:
+        print(f"An error occurred: {e}")
+        return None
+    finally:
+        conn.close()
+
 
 
 def delete_user_task(username, taskname):
