@@ -271,9 +271,9 @@ class GUI():
         self.task_list = tk.Listbox(self.task_frame, height=10, width=80)
         self.task_list.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Initialize canvas
-        self.canvas = tk.Canvas(self.loginWindow, width=600, height=60, bg="white")
-        self.canvas.place(x=50, y=300)  # Adjust position as needed
+        # # Initialize canvas
+        # self.canvas = tk.Canvas(self.loginWindow, width=600, height=60, bg="white")
+        # self.canvas.place(x=50, y=300)  # Adjust position as needed
 
         # Performance Section
         self.performance_frame = ttk.Labelframe(self.loginWindow, text="Performance")
@@ -300,7 +300,6 @@ class GUI():
         # Update the progress bar with the new completion percentage
         done_counter = sum(1 for task in tasks if task[6] == 1)  # Count completed tasks
         total_counter = len(tasks)  # Count total tasks
-        print(done_counter, total_counter)
         if total_counter > 0:
             completion_percentage = (done_counter / total_counter) * 100
         else:
@@ -363,7 +362,7 @@ class GUI():
                 self.error_label.destroy()
 
             # Validate fields
-            if not name.isalpha():  # Ensure name contains only alphabetic characters
+            if not name.replace(" ", "").isalpha():  # Ensure name contains only alphabetic characters
                 self.error_label = ttk.Label(new_window, text="Name must contain only letters!", foreground="red",
                                              font=("Comic Sans MS", 10))
                 self.error_label.grid(row=7, column=0, columnspan=2, pady=5)
@@ -481,8 +480,6 @@ class GUI():
         # Update the progress bar with the new completion percentage
         done_counter = sum(1 for task in tasks if task[6] == 1)  # Count completed tasks
         total_counter = len(tasks)  # Count total tasks
-
-        print(done_counter, total_counter)
 
         if total_counter > 0:
             completion_percentage = (done_counter / total_counter) * 100

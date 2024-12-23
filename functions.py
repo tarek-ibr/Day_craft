@@ -32,11 +32,20 @@ def get_tasks(username, duration):
     final_tasks = []
     added_tasks = set()  # Track added task names to ensure prerequisites are respected
     total_time = 0  # Track total time of added tasks
+    queued_tasks = []
 
     for sorted_task in sorted_tasks:
         task_duration = int(sorted_task["task"][3])
         task_name = sorted_task["task"][1]
         prerequisite = sorted_task["prerequisite"]
+
+        for queue in queued_tasks:
+            # Check if task can be added without exceeding total allowed time
+            if int(queue[3]) <= time_left and (not queue[5] or queue[5] in added_tasks) and queue[6] == 0 and queue[1] not in added_tasks:
+                final_tasks.append(queue)
+                total_time += int(queue[3])
+                time_left -= int(queue[3])
+                added_tasks.add(queue[1])
 
         # Check if task can be added without exceeding total allowed time
         if task_duration <= time_left and (not prerequisite or prerequisite in added_tasks) and sorted_task["task"][6]==0:
@@ -44,6 +53,11 @@ def get_tasks(username, duration):
             total_time += task_duration
             time_left -= task_duration
             added_tasks.add(task_name)
+        else:
+            if sorted_task["task"][6]==0:
+                queued_tasks.append(sorted_task["task"])
+
+
 
         # Stop if no time is left
         if time_left <= 0:
