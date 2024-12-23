@@ -3,6 +3,8 @@ import ttkbootstrap as ttk
 import db_functions as db
 import Destroy as ds
 import functions as fn
+from tkinter import IntVar, Canvas
+
 
 
 class GUI():
@@ -213,6 +215,29 @@ class GUI():
             else:
                 self.invalid.config(text="username already exists")
 
+
+    def draw_custom_progress_bar(self, canvas, width, height, completion_percentage):
+        """
+        Draws a custom progress bar with completed (green) and not completed (red) portions.
+        """
+        canvas.delete("all")  # Clear previous content
+        completed_width = (completion_percentage / 100) * width
+
+        # Draw the completed portion in green
+        canvas.create_rectangle(0, 0, completed_width, height, fill="green", outline="")
+
+        # Draw the not completed portion in red
+        if completed_width < width:
+            canvas.create_rectangle(completed_width, 0, width, height, fill="red", outline="")
+
+        # Add percentage text in the center
+        canvas.create_text(
+            width / 2, height / 2,
+            text=f"{completion_percentage:.2f}%",
+            fill="white",
+            font=("Arial", 12, "bold")
+        )
+
     def user(self, username):
         # Destroy previous UI components
         ds.destroy(self)
@@ -257,6 +282,31 @@ class GUI():
         # Placeholder content for performance
         self.performance_label = ttk.Label(self.performance_frame, text="Performance metrics will be shown here.")
         self.performance_label.pack(pady=10)
+
+        # Task Completion Rate
+        # Inside the user method or wherever you're creating the performance section
+        self.completion_label = ttk.Label(self.performance_frame, text="Task Completion Rate:")
+        self.completion_label.pack(pady=5)
+
+        # Custom Progress Bar
+
+
+        # Initialize the canvas for the custom progress bar
+        self.progress_canvas = Canvas(self.performance_frame, width=300, height=30, bg="white", highlightthickness=0)
+        self.progress_canvas.pack()
+
+
+        tasks = db.get_user_tasks(username)
+        # Update the progress bar with the new completion percentage
+        done_counter = sum(1 for task in tasks if task[6] == 1)  # Count completed tasks
+        total_counter = len(tasks)  # Count total tasks
+        print(done_counter, total_counter)
+        if total_counter > 0:
+            completion_percentage = (done_counter / total_counter) * 100
+        else:
+            completion_percentage = 0  # Avoid division by zero when there are no tasks
+
+        self.draw_custom_progress_bar(self.progress_canvas, 300, 30, (done_counter / total_counter) * 100)
 
         # Log Out Button
         self.logout_button = ttk.Button(self.loginWindow, text="Log Out", bootstyle="danger",
@@ -426,6 +476,22 @@ class GUI():
             no_task_label = ttk.Label(scrollable_frame, text="No tasks available for the specified duration.",
                                       foreground="red")
             no_task_label.pack(pady=10)
+
+        tasks = db.get_user_tasks(username)
+
+        # Update the progress bar with the new completion percentage
+        done_counter = sum(1 for task in tasks if task[6] == 1)  # Count completed tasks
+        total_counter = len(tasks)  # Count total tasks
+
+        print(done_counter, total_counter)
+
+        if total_counter > 0:
+            completion_percentage = (done_counter / total_counter) * 100
+        else:
+            completion_percentage = 0  # Avoid division by zero when there are no tasks
+
+        self.progress_canvas.delete("all")  # Clear the canvas
+        self.draw_custom_progress_bar(self.progress_canvas, 300, 30, completion_percentage)
 
     def done(self, task, var):
         """Handles checkbox state changes."""
