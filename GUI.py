@@ -263,13 +263,11 @@ class GUI():
                                         command=self.login_Window)  # Navigate back to login window
         self.logout_button.place(x=20, y=550)
 
-
-
     def add_task_user(self, username):
         new_window = tk.Toplevel(self.loginWindow)  # Create a new window
         new_window.title('Add Task')
 
-        # Create labels and entry fields for the book details
+        # Create labels and entry fields for the task details
         name_label = ttk.Label(new_window, text="Task Name", font=("Comic Sans MS", 12))
         name_label.grid(row=0, column=0)
         name_entry = ttk.Entry(new_window, font=("Comic Sans MS", 10))
@@ -290,17 +288,25 @@ class GUI():
         category_entry = ttk.Entry(new_window, font=("Comic Sans MS", 10))
         category_entry.grid(row=4, column=1, pady=1)
 
-        prerequisite_label = ttk.Label(new_window, text="Prerequisite of the task if there any", font=("Comic Sans MS", 12))
+        prerequisite_label = ttk.Label(new_window, text="Prerequisite of the task if any", font=("Comic Sans MS", 12))
         prerequisite_label.grid(row=5, column=0)
-        prerequisite_entry = ttk.Entry(new_window, font=("Comic Sans MS", 10))
-        prerequisite_entry.grid(row=5, column=1, pady=1)
+
+        # Retrieve tasks for the user and populate dropdown
+        user_tasks = db.get_user_tasks(username)
+        task_names = [task[1] for task in user_tasks]  # Assuming task name is at index 1
+        task_names.append("None")  # Add "None" as a default option for no prerequisite
+
+        prerequisite_var = tk.StringVar(new_window)
+        prerequisite_var.set("None")  # Set default value to "None"
+        prerequisite_menu = ttk.OptionMenu(new_window, prerequisite_var, *task_names)
+        prerequisite_menu.grid(row=5, column=1, pady=1)
 
         def add_task_to_db():  # Function to add the task to the database
             name = name_entry.get()
             priority = priority_entry.get()
             time = time_entry.get()
-            category = category_entry.get() # Correctly retrieve text from Text widget
-            prerequisite = prerequisite_entry.get()  # Correctly retrieve text from Text widget
+            category = category_entry.get()
+            prerequisite = prerequisite_var.get()  # Get the selected value from the dropdown
 
             # Clear any previous error message
             if hasattr(self, "error_label") and self.error_label:
@@ -331,14 +337,11 @@ class GUI():
                 self.error_label.grid(row=7, column=0, columnspan=2, pady=5)
                 return
 
-            if not prerequisite.replace(" ", "").isalpha():  # Ensure prerequisite is text (allows spaces)
-                self.error_label = ttk.Label(new_window, text="Prerequisite must contain only letters and spaces!",
-                                             foreground="red", font=("Comic Sans MS", 10))
-                self.error_label.grid(row=7, column=0, columnspan=2, pady=5)
-                return
-
             # Add the task to the database if all validations pass
-            db.add_user_task(username, name, int(priority), int(time), category, prerequisite)
+            prerequisite_value = None if prerequisite == "None" else prerequisite
+            if prerequisite == "None":
+                prerequisite = None
+            db.add_user_task(username, name, int(priority), int(time), category, prerequisite_value)
             new_window.destroy()
             self.user(username)
 
