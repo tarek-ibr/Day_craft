@@ -4,7 +4,7 @@ import db_functions as db
 import Destroy as ds
 import functions as fn
 from tkinter import IntVar, Canvas
-
+from functools import partial #for mark as complete
 
 
 class GUI():
@@ -452,11 +452,11 @@ class GUI():
                 var = tk.BooleanVar(value=False)  # Ensure no indeterminate state
                 self.task_vars.append((task_name, var))
 
-                # Create the Checkbutton and ensure proper binding using lambda with default arguments
+                # Create the Checkbutton and bind using functools.partial
                 task_checkbox = ttk.Checkbutton(
                     task_row,
                     variable=var,
-                    command=lambda task_name=task_name, var=var: self.done(task, var)
+                    command=partial(self.done, task, var)
                 )
                 task_checkbox.pack(side="left", padx=10)
 
@@ -464,8 +464,7 @@ class GUI():
                 task_canvas = tk.Canvas(task_row, height=30, width=max_width, bg="white")
                 task_canvas.pack(side="left", padx=10, fill="x", expand=True)
 
-                # # Draw a proportional bar for the task
-                # bar_width = (task_duration / total_duration) * max_width
+                # Draw a proportional bar for the task
                 task_canvas.create_rectangle(0, 0, max_width, 30, fill="blue")
 
                 # Add task name as text inside the bar
