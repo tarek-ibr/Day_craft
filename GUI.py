@@ -385,6 +385,8 @@ class GUI():
             total_duration = sum(task[3] for task in tasks)  # Sum of task durations for bar width proportion
             max_width = 500  # Maximum width for a task bar
 
+            self.task_vars = []  # List to store task names and their BooleanVars
+
             for task in tasks:
                 task_name = task[1]  # Assuming task name is at index 1
                 task_duration = task[3]  # Assuming duration is at index 3
@@ -393,27 +395,45 @@ class GUI():
                 task_row = ttk.Frame(scrollable_frame)
                 task_row.pack(fill="x", pady=5, padx=10)
 
-                # Checkbox for completion
-                var = tk.BooleanVar(value=False)
-                task_checkbox = ttk.Checkbutton(task_row, text="", variable=var)  # Empty text, name is on the bar
+                # Initialize the BooleanVar to False (unchecked by default)
+                var = tk.BooleanVar(value=False)  # Ensure no indeterminate state
+                self.task_vars.append((task_name, var))
+
+                # Create the Checkbutton and ensure proper binding using lambda with default arguments
+                task_checkbox = ttk.Checkbutton(
+                    task_row,
+                    variable=var,
+                    command=lambda task_name=task_name, var=var: self.done(task_name, var)
+                )
                 task_checkbox.pack(side="left", padx=10)
 
                 # Canvas for task bar
                 task_canvas = tk.Canvas(task_row, height=30, width=max_width, bg="white")
                 task_canvas.pack(side="left", padx=10, fill="x", expand=True)
 
-                # Draw a proportional bar for the task
-                bar_width = (task_duration / total_duration) * max_width
-                bar_rect = task_canvas.create_rectangle(0, 0, bar_width, 30, fill="blue")
+                # # Draw a proportional bar for the task
+                # bar_width = (task_duration / total_duration) * max_width
+                task_canvas.create_rectangle(0, 0, max_width, 30, fill="blue")
 
                 # Add task name as text inside the bar
                 task_canvas.create_text(
-                    bar_width / 2, 15, text=task_name, fill="white", anchor="center", font=("Arial", 12, "bold")
+                    max_width / 2, 15, text=task_name, fill="white", anchor="center", font=("Arial", 12, "bold")
                 )
         else:
             no_task_label = ttk.Label(scrollable_frame, text="No tasks available for the specified duration.",
                                       foreground="red")
             no_task_label.pack(pady=10)
+
+    def done(self, task_name, var):
+        """Handles checkbox state changes."""
+        try:
+            if var.get():  # Check if the checkbox is checked
+                print(f"Task '{task_name}' is marked as done.")
+                # Add logic here, e.g., update a database, remove the task, etc.
+            else:
+                print(f"Task '{task_name}' is unchecked.")
+        except Exception as e:
+            print(f"Error in done function: {e}")
 
     def team(self, teamname):
         # Destroy previous UI components

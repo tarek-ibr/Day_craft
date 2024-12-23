@@ -8,6 +8,8 @@ def get_tasks(username, duration):
     user_tasks = db.get_user_tasks(username)  # Get tasks from database
     tasks = []
 
+    time_left = int(duration)
+
     for task in user_tasks:
         if int(task[3]) <= int(duration):  # Filter tasks based on duration
             tasks.append(task)
@@ -29,17 +31,26 @@ def get_tasks(username, duration):
 
     final_tasks = []
     added_tasks = set()  # Track added task names to ensure prerequisites are respected
+    total_time = 0  # Track total time of added tasks
 
     for sorted_task in sorted_tasks:
+        task_duration = int(sorted_task["task"][3])
         task_name = sorted_task["task"][1]
         prerequisite = sorted_task["prerequisite"]
 
-        # Add task if it has no prerequisite or its prerequisite is already in the list
-        if not prerequisite or prerequisite in added_tasks:
+        # Check if task can be added without exceeding total allowed time
+        if task_duration <= time_left and (not prerequisite or prerequisite in added_tasks):
             final_tasks.append(sorted_task["task"])
+            total_time += task_duration
+            time_left -= task_duration
             added_tasks.add(task_name)
 
+        # Stop if no time is left
+        if time_left <= 0:
+            break
+
     return final_tasks
+
 
 def get_shortest_path_to_tasks(username, duration):
     pass
