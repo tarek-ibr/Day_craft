@@ -2,6 +2,7 @@ import tkinter as tk
 import ttkbootstrap as ttk
 import db_functions as db
 import Destroy as ds
+import functions as fn
 
 
 class GUI():
@@ -231,10 +232,10 @@ class GUI():
 
         # Duration Entry
         self.duration_entry = ttk.Entry(self.loginWindow)
-        self.duration_entry.place(x=280, y=20, width=100)
+        self.duration_entry.place(x=290, y=20, width=100)
 
         # Refresh Button
-        self.refresh_button = ttk.Button(self.loginWindow, text="Refresh", bootstyle="warning", command=lambda: self.refresh_user(username))
+        self.refresh_button = ttk.Button(self.loginWindow, text="Refresh", bootstyle="warning", command=lambda: self.refresh_user(username, self.duration_entry.get()))
         self.refresh_button.place(x=720, y=20)
 
         # Calendar/Task List Section
@@ -244,6 +245,10 @@ class GUI():
         # Placeholder content for tasks
         self.task_list = tk.Listbox(self.task_frame, height=10, width=80)
         self.task_list.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Initialize canvas
+        self.canvas = tk.Canvas(self.loginWindow, width=600, height=60, bg="white")
+        self.canvas.place(x=50, y=300)  # Adjust position as needed
 
         # Performance Section
         self.performance_frame = ttk.Labelframe(self.loginWindow, text="Performance")
@@ -341,8 +346,48 @@ class GUI():
                                command=lambda: [add_task_to_db()])
         add_button.grid(row=6, column=0, columnspan=2)
 
-    def refresh_user(self, username):
-        pass
+    def refresh_user(self, username, duration):
+        # Validate duration input
+        if not (duration.isdigit() and int(duration) > 0):  # Ensure duration is numeric and positive
+            self.error_label = ttk.Label(self.loginWindow, text="Duration must be a positive number!", foreground="red",
+                                         font=("Comic Sans MS", 10))
+            self.error_label.place(x=400, y=20)
+            return
+
+        # Clear any existing error message
+        if hasattr(self, "error_label") and self.error_label:
+            self.error_label.destroy()
+
+        # Fetch tasks
+        tasks = fn.get_tasks(username, duration)
+
+        # Clear the canvas before adding new tasks
+        self.canvas.delete("all")  # Clear the canvas
+
+        if tasks:
+            total_duration = sum(task[3] for task in tasks)  # Sum of task durations
+            canvas_width = 600  # Width of the canvas
+            canvas_height = 50  # Height for the task bar
+            x_start = 0  # Starting x-coordinate
+
+            # Draw the task bar
+            for task in tasks:
+                task_name = task[1]  # Assuming task name is at index 1
+                task_duration = task[3]  # Assuming duration is at index 3
+
+                # Calculate the proportional width for the task
+                task_width = (task_duration / total_duration) * canvas_width
+
+                # Draw a rectangle for the task
+                self.canvas.create_rectangle(x_start, 10, x_start + task_width, canvas_height, fill="blue")
+
+                # Add task name as a label on the bar
+                self.canvas.create_text(x_start + task_width / 2, 30, text=task_name, fill="white")
+
+                # Update the starting x-coordinate for the next task
+                x_start += task_width
+        else:
+            self.canvas.create_text(300, 30, text="No tasks available for the specified duration.", fill="red")
 
     def team(self, teamname):
         # Destroy previous UI components
