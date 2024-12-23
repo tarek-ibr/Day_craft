@@ -406,7 +406,7 @@ class GUI():
                 task_checkbox = ttk.Checkbutton(
                     task_row,
                     variable=var,
-                    command=lambda task_name=task_name, var=var: self.done(task_name, var)
+                    command=lambda task_name=task_name, var=var: self.done(task, var)
                 )
                 task_checkbox.pack(side="left", padx=10)
 
@@ -427,14 +427,13 @@ class GUI():
                                       foreground="red")
             no_task_label.pack(pady=10)
 
-    def done(self, task_name, var):
+    def done(self, task, var):
         """Handles checkbox state changes."""
         try:
             if var.get():  # Check if the checkbox is checked
-                print(f"Task '{task_name}' is marked as done.")
-                # Add logic here, e.g., update a database, remove the task, etc.
+                db.edit_user_task(task[0], task[1], task[2], task[3], task[4], task[5], 1)
             else:
-                print(f"Task '{task_name}' is unchecked.")
+                db.edit_user_task(task[0], task[1], task[2], task[3], task[4], task[5], 0)
         except Exception as e:
             print(f"Error in done function: {e}")
 

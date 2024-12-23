@@ -6,23 +6,19 @@ def searchByUsername(n):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
-    cursor.execute(f"SELECT * FROM users WHERE username = ?", (n,))
+    cursor.execute("SELECT * FROM users WHERE username = ?", (n,))
     row = cursor.fetchone()
 
     userlist = []
-    userlist.append(row[0])
-    userlist.append(row[1])
-    userlist.append(row[2])
+    if row:
+        userlist.append(row[0])
+        userlist.append(row[1])
+        userlist.append(row[2])
 
     conn.commit()
     conn.close()
 
-    if row:
-        return userlist
-    else:
-        return None
-
-    # Commit changes and close the connection
+    return userlist if row else None
 
 
 def searchByTeamname(n):
@@ -30,22 +26,19 @@ def searchByTeamname(n):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
-    cursor.execute(f"SELECT * FROM teams WHERE teamname = ?", (n,))
+    cursor.execute("SELECT * FROM teams WHERE teamname = ?", (n,))
     row = cursor.fetchone()
 
     teamlist = []
-    teamlist.append(row[0])
-    teamlist.append(row[1])
+    if row:
+        teamlist.append(row[0])
+        teamlist.append(row[1])
 
     conn.commit()
     conn.close()
 
-    if row:
-        return teamlist
-    else:
-        return None
+    return teamlist if row else None
 
-    # Commit changes and close the connection
 
 def authenticateUser(username, password):
     db_path = "db.sqlite"
@@ -55,16 +48,14 @@ def authenticateUser(username, password):
     cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
     row = cursor.fetchone()
 
-    if row is None:
-        #print("No user found with this username.")
-        conn.close()
-        return False
-    elif row[1] == hash_password(password):
+    if row and row[1] == hash_password(password):
         conn.commit()
         conn.close()
         return True
     else:
+        conn.close()
         return False
+
 
 def authenticateTeam(username, password):
     db_path = "db.sqlite"
@@ -74,16 +65,14 @@ def authenticateTeam(username, password):
     cursor.execute("SELECT * FROM teams WHERE teamname = ?", (username,))
     row = cursor.fetchone()
 
-    if row is None:
-        #print("No user found with this username.")
-        conn.close()
-        return False
-    elif row[1] == hash_password(password):
+    if row and row[1] == hash_password(password):
         conn.commit()
         conn.close()
         return True
     else:
+        conn.close()
         return False
+
 
 def checkUserduplicates(username):
     db_path = "db.sqlite"
@@ -92,12 +81,10 @@ def checkUserduplicates(username):
 
     cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
     row = cursor.fetchone()
+    conn.close()
 
-    if row is None:
-        conn.close()
-        return True
-    else:
-        return False
+    return row is None
+
 
 def checkTeamduplicates(username):
     db_path = "db.sqlite"
@@ -106,19 +93,19 @@ def checkTeamduplicates(username):
 
     cursor.execute("SELECT * FROM teams WHERE teamname = ?", (username,))
     row = cursor.fetchone()
+    conn.close()
 
-    if row is None:
-        conn.close()
-        return True
-    else:
-        return False
+    return row is None
+
 
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
+
 def add_user(username, password, team):
-    if (username == "" or password == "" or team == ""):
+    if username == "" or password == "" or team == "":
         return False
+
     db_path = "db.sqlite"
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -131,12 +118,14 @@ def add_user(username, password, team):
         conn.close()
         return True
     except:
+        conn.close()
         return False
 
 
 def add_team(teamname, password):
-    if (teamname == "" or password == ""):
+    if teamname == "" or password == "":
         return False
+
     db_path = "db.sqlite"
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -149,28 +138,27 @@ def add_team(teamname, password):
         conn.close()
         return True
     except:
+        conn.close()
         return False
 
 
-
-def add_user_task(username, taskname, priority, time, category, prerequisite):
+def add_user_task(username, taskname, priority, time, category, prerequisite, done=0):
     conn = sqlite3.connect('db.sqlite')
     c = conn.cursor()
 
     try:
-        # Check if the task already exists for the user
         c.execute("SELECT * FROM userTasks WHERE username = ? AND taskname = ?", (username, taskname))
         existing_task = c.fetchone()
 
         if existing_task:
-            # Task already exists
             return False
 
-        # Insert the new task
-        c.execute("""INSERT INTO userTasks (username, taskname, priority, time, category, prerequisite) VALUES (?, ?, ?, ?, ?, ?) """, (username, taskname, priority, time, category, prerequisite))
+        c.execute("""INSERT INTO userTasks (username, taskname, priority, time, category, prerequisite, done) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                  (username, taskname, priority, time, category, prerequisite, done))
 
         conn.commit()
-        return True  # Task added successfully
+        return True
 
     except sqlite3.Error as e:
         print(f"An error occurred: {e}")
@@ -180,24 +168,23 @@ def add_user_task(username, taskname, priority, time, category, prerequisite):
         conn.close()
 
 
-def add_team_task(teamname, taskname, priority, time, category, prerequisite):
+def add_team_task(teamname, taskname, priority, time, category, prerequisite, done=0):
     conn = sqlite3.connect('db.sqlite')
     c = conn.cursor()
 
     try:
-        # Check if the task already exists for the user
         c.execute("SELECT * FROM teamTasks WHERE teamname = ? AND taskname = ?", (teamname, taskname))
         existing_task = c.fetchone()
 
         if existing_task:
-            # Task already exists
             return False
 
-        # Insert the new task
-        c.execute("""INSERT INTO teamTasks (teamname, taskname, priority, time, category, prerequisite) VALUES (?, ?, ?, ?, ?, ?) """, (teamname, taskname, priority, time, category, prerequisite))
+        c.execute("""INSERT INTO teamTasks (teamname, taskname, priority, time, category, prerequisite, done) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                  (teamname, taskname, priority, time, category, prerequisite, done))
 
         conn.commit()
-        return True  # Task added successfully
+        return True
 
     except sqlite3.Error as e:
         print(f"An error occurred: {e}")
@@ -207,24 +194,23 @@ def add_team_task(teamname, taskname, priority, time, category, prerequisite):
         conn.close()
 
 
-def edit_user_task(username, taskname, priority, time, category, prerequisite):
+def edit_user_task(username, taskname, priority, time, category, prerequisite, done):
     conn = sqlite3.connect('db.sqlite')
     c = conn.cursor()
 
     try:
-        # Check if the task exists for the given username and taskname
         c.execute("SELECT * FROM userTasks WHERE username = ? AND taskname = ?", (username, taskname))
         existing_task = c.fetchone()
 
         if not existing_task:
-            # Task does not exist
             return False
 
-        # Update the task details using username and taskname as identifiers
-        c.execute("""UPDATE userTasks SET priority = ?, [time] = ?, category = ?, prerequisite = ? WHERE username = ? AND taskname = ? """, (priority, time, category, prerequisite, username, taskname))
+        c.execute("""UPDATE userTasks SET priority = ?, [time] = ?, category = ?, prerequisite = ?, done = ? 
+                     WHERE username = ? AND taskname = ?""",
+                  (priority, time, category, prerequisite, done, username, taskname))
 
         conn.commit()
-        return True  # Task updated successfully
+        return True
 
     except sqlite3.Error as e:
         print(f"An error occurred: {e}")
@@ -233,24 +219,24 @@ def edit_user_task(username, taskname, priority, time, category, prerequisite):
     finally:
         conn.close()
 
-def edit_team_task(teamname, taskname, priority, time, category, prerequisite):
+
+def edit_team_task(teamname, taskname, priority, time, category, prerequisite, done):
     conn = sqlite3.connect('db.sqlite')
     c = conn.cursor()
 
     try:
-        # Check if the task exists for the given username and taskname
         c.execute("SELECT * FROM teamTasks WHERE teamname = ? AND taskname = ?", (teamname, taskname))
         existing_task = c.fetchone()
 
         if not existing_task:
-            # Task does not exist
             return False
 
-        # Update the task details using username and taskname as identifiers
-        c.execute("""UPDATE teamTasks SET priority = ?, time = ?, category = ?, prerequisite = ? WHERE teamname = ? AND taskname = ? """, (priority, time, category, prerequisite, teamname, taskname))
+        c.execute("""UPDATE teamTasks SET priority = ?, time = ?, category = ?, prerequisite = ?, done = ? 
+                     WHERE teamname = ? AND taskname = ?""",
+                  (priority, time, category, prerequisite, done, teamname, taskname))
 
         conn.commit()
-        return True  # Task updated successfully
+        return True
 
     except sqlite3.Error as e:
         print(f"An error occurred: {e}")
@@ -265,7 +251,6 @@ def get_user_tasks(username):
     c = conn.cursor()
 
     try:
-        # Correctly pass the username as a single-element tuple
         c.execute("SELECT * FROM userTasks WHERE username = ?", (username,))
         tasks = c.fetchall()
         return tasks
@@ -275,12 +260,12 @@ def get_user_tasks(username):
     finally:
         conn.close()
 
+
 def get_team_tasks(teamname):
     conn = sqlite3.connect('db.sqlite')
     c = conn.cursor()
 
     try:
-        # Correctly pass the username as a single-element tuple
         c.execute("SELECT * FROM teamTasks WHERE teamname = ?", (teamname,))
         tasks = c.fetchall()
         return tasks
@@ -290,26 +275,20 @@ def get_team_tasks(teamname):
     finally:
         conn.close()
 
+
 def get_team_users(teamname):
     conn = sqlite3.connect('db.sqlite')
     c = conn.cursor()
 
     try:
-        # Correctly pass the username as a single-element tuple
         c.execute("SELECT * FROM users WHERE team = ?", (teamname,))
         users = c.fetchall()
-        users_list= []
-
-        for user in users:
-            users_list.append(user[0])
-
-        return users_list
+        return [user[0] for user in users]
     except sqlite3.Error as e:
         print(f"An error occurred: {e}")
         return None
     finally:
         conn.close()
-
 
 
 def delete_user_task(username, taskname):
@@ -318,15 +297,9 @@ def delete_user_task(username, taskname):
     cursor = conn.cursor()
 
     try:
-        # Execute the DELETE statement
         cursor.execute("DELETE FROM userTasks WHERE username = ? AND taskname = ?", (username, taskname))
         conn.commit()
-
-        # Check if any row was deleted
-        if cursor.rowcount > 0:
-            return True  # Task deleted successfully
-        else:
-            return False  # No task found with the given criteria
+        return cursor.rowcount > 0
     except sqlite3.Error as e:
         print(f"An error occurred: {e}")
         return False
@@ -340,19 +313,11 @@ def delete_team_task(teamname, taskname):
     cursor = conn.cursor()
 
     try:
-        # Execute the DELETE statement
         cursor.execute("DELETE FROM teamTasks WHERE teamname = ? AND taskname = ?", (teamname, taskname))
         conn.commit()
-
-        # Check if any row was deleted
-        if cursor.rowcount > 0:
-            return True  # Task deleted successfully
-        else:
-            return False  # No task found with the given criteria
+        return cursor.rowcount > 0
     except sqlite3.Error as e:
         print(f"An error occurred: {e}")
         return False
     finally:
         conn.close()
-
-

@@ -39,7 +39,7 @@ def get_tasks(username, duration):
         prerequisite = sorted_task["prerequisite"]
 
         # Check if task can be added without exceeding total allowed time
-        if task_duration <= time_left and (not prerequisite or prerequisite in added_tasks):
+        if task_duration <= time_left and (not prerequisite or prerequisite in added_tasks) and sorted_task["task"][6]==0:
             final_tasks.append(sorted_task["task"])
             total_time += task_duration
             time_left -= task_duration
