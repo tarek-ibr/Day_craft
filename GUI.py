@@ -361,33 +361,59 @@ class GUI():
         # Fetch tasks
         tasks = fn.get_tasks(username, duration)
 
-        # Clear the canvas before adding new tasks
-        self.canvas.delete("all")  # Clear the canvas
+        # Clear the task frame before adding new tasks
+        for widget in self.task_frame.winfo_children():
+            widget.destroy()
+
+        # Add a scrollbar for vertical scrolling
+        canvas = tk.Canvas(self.task_frame)
+        scrollbar = ttk.Scrollbar(self.task_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
 
         if tasks:
-            total_duration = sum(task[3] for task in tasks)  # Sum of task durations
-            canvas_width = 600  # Width of the canvas
-            canvas_height = 50  # Height for the task bar
-            x_start = 0  # Starting x-coordinate
+            total_duration = sum(task[3] for task in tasks)  # Sum of task durations for bar width proportion
+            max_width = 500  # Maximum width for a task bar
 
-            # Draw the task bar
             for task in tasks:
                 task_name = task[1]  # Assuming task name is at index 1
                 task_duration = task[3]  # Assuming duration is at index 3
 
-                # Calculate the proportional width for the task
-                task_width = (task_duration / total_duration) * canvas_width
+                # Create a frame for each task row
+                task_row = ttk.Frame(scrollable_frame)
+                task_row.pack(fill="x", pady=5, padx=10)
 
-                # Draw a rectangle for the task
-                self.canvas.create_rectangle(x_start, 10, x_start + task_width, canvas_height, fill="blue")
+                # Checkbox for completion
+                var = tk.BooleanVar(value=False)
+                task_checkbox = ttk.Checkbutton(task_row, text="", variable=var)  # Empty text, name is on the bar
+                task_checkbox.pack(side="left", padx=10)
 
-                # Add task name as a label on the bar
-                self.canvas.create_text(x_start + task_width / 2, 30, text=task_name, fill="white")
+                # Canvas for task bar
+                task_canvas = tk.Canvas(task_row, height=30, width=max_width, bg="white")
+                task_canvas.pack(side="left", padx=10, fill="x", expand=True)
 
-                # Update the starting x-coordinate for the next task
-                x_start += task_width
+                # Draw a proportional bar for the task
+                bar_width = (task_duration / total_duration) * max_width
+                bar_rect = task_canvas.create_rectangle(0, 0, bar_width, 30, fill="blue")
+
+                # Add task name as text inside the bar
+                task_canvas.create_text(
+                    bar_width / 2, 15, text=task_name, fill="white", anchor="center", font=("Arial", 12, "bold")
+                )
         else:
-            self.canvas.create_text(300, 30, text="No tasks available for the specified duration.", fill="red")
+            no_task_label = ttk.Label(scrollable_frame, text="No tasks available for the specified duration.",
+                                      foreground="red")
+            no_task_label.pack(pady=10)
 
     def team(self, teamname):
         # Destroy previous UI components
