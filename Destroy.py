@@ -169,4 +169,9 @@ def destroy(self):
     except Exception:
         pass
 
+    try:
+        self.image_label()
+    except Exception:
+        pass
+
 

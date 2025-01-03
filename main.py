@@ -4,6 +4,6 @@ import db_functions as db
 
 
 if __name__ == '__main__':
-    root = tkk.Window()
+    root = tkk.Window(themename="solar")
     app = GUI(root)
     root.mainloop()

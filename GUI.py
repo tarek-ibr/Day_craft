@@ -5,6 +5,8 @@ import Destroy as ds
 import functions as fn
 from tkinter import IntVar, Canvas
 from functools import partial #for mark as complete
+from PIL import Image, ImageTk  # For handling images
+
 
 
 class GUI():
@@ -13,50 +15,69 @@ class GUI():
         self.login_Window()  # Call the login_Window method
 
     def login_Window(self):
-        ds.destroy(self)
-        self.loginWindow.geometry('800x900')
+
+        # Destroy current content
+        for widget in self.loginWindow.winfo_children():
+            widget.destroy()
+
+        self.loginWindow.geometry('1000x800')
         self.loginWindow.title('Login')
         self.loginWindow.resizable(False, False)
 
-        self.loginWindow.bind("<MouseWheel>", lambda event: None)
+        # Main container frame
+        main_frame = tk.Frame(self.loginWindow, bg='white')
+        main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Create a frame for the labels and entries
-        self.frame = tk.Frame(self.loginWindow)
-        self.frame.pack(expand=True)
+        # Left panel
+        left_panel = tk.Frame(main_frame, bg='white', width=500)
+        left_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        # Dropdown menu for selecting "Team" or "User"
-        self.role_label = ttk.Label(self.frame, text="Role:")
-        self.role_label.grid(row=0, column=0, padx=5, pady=5)
+        # Styling and Widgets in the Left Panel
+        left_content = tk.Frame(left_panel, bg='white')
+        left_content.pack(expand=True)
 
-        self.role_combobox = ttk.Combobox(self.frame, state="readonly", values=["Team", "User"])
-        self.role_combobox.grid(row=0, column=1, padx=5, pady=5)
-        self.role_combobox.current(0)  # Set default value to "Team"
+        self.role_label = ttk.Label(left_content, text="Role:", font=("Arial", 12))
+        self.role_label.pack(anchor="center", pady=(20, 5))
 
-        # Username label and entry
-        self.username_label = ttk.Label(self.frame, text="Username:")
-        self.username_label.grid(row=1, column=0, padx=5, pady=5)
-        self.username_entry = ttk.Entry(self.frame)
-        self.username_entry.grid(row=1, column=1, padx=5, pady=5)
+        self.role_combobox = ttk.Combobox(left_content, state="readonly", values=["Team", "User"], font=("Arial", 12))
+        self.role_combobox.pack(pady=(0, 20), fill='x', padx=50)
+        self.role_combobox.current(0)
 
-        # Password label and entry
-        self.password_label = ttk.Label(self.frame, text="Password:")
-        self.password_label.grid(row=2, column=0, padx=5, pady=5)
-        self.password_entry = ttk.Entry(self.frame, show="•")
-        self.password_entry.grid(row=2, column=1, padx=5, pady=5)
+        self.username_label = ttk.Label(left_content, text="Username:", font=("Arial", 12))
+        self.username_label.pack(anchor="center", pady=(10, 5))
 
-        # Login button
-        self.login_button = ttk.Button(self.frame, text="Login", command=self.authenticate)
-        self.login_button.grid(row=3, column=0, columnspan=2, pady=0)
+        self.username_entry = ttk.Entry(left_content, font=("Arial", 12))
+        self.username_entry.pack(pady=(0, 20), fill='x', padx=50)
+
+        self.password_label = ttk.Label(left_content, text="Password:", font=("Arial", 12))
+        self.password_label.pack(anchor="center", pady=(10, 5))
+
+        self.password_entry = ttk.Entry(left_content, font=("Arial", 12), show="•")
+        self.password_entry.pack(pady=(0, 20), fill='x', padx=50)
+
+        self.login_button = ttk.Button(left_content, text="Login", command=self.authenticate, style="Accent.TButton")
+        self.login_button.pack(pady=(15, 15), fill='x', padx=50)
         self.loginWindow.bind("<Return>", lambda event: self.authenticate())
 
-        # Create new user button
-        self.createuser = ttk.Button(self.frame, text="Create new user", bootstyle="dark-link")
-        self.createuser.grid(row=4, column=0, columnspan=2, pady=5)
-        self.createuser.bind("<Button-1>", lambda event: self.create_account())
+        self.createuser = ttk.Button(left_content, text="Create new user", command=self.create_account,
+                                     style="Link.TButton")
+        self.createuser.pack(pady=(0, 10), fill='x', padx=50)
 
-        # Label for invalid login attempts
-        self.invalid = ttk.Label(self.frame, text="", foreground="red")
-        self.invalid.grid(row=5, column=0, columnspan=2, pady=5)
+        self.invalid = ttk.Label(left_content, text="", foreground="red", font=("Arial", 10))
+        self.invalid.pack(pady=(10, 0))
+
+        # Right panel for artwork
+        right_panel = tk.Frame(main_frame, bg='white', width=500)
+        right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+
+        # Load and Display the Image
+        image = Image.open("login.png")  # Replace with your actual image path
+        image = image.resize((650, 800), Image.Resampling.LANCZOS)  # Resize image to fit the frame
+        image_tk = ImageTk.PhotoImage(image)
+
+        self.image_label = tk.Label(right_panel, image=image_tk, bg='white')
+        self.image_label.image = image_tk  # Keep a reference to avoid garbage collection
+        self.image_label.pack(fill=tk.BOTH, expand=True)  # Fill the entire right panel
 
         self.loginWindow.mainloop()
 
@@ -75,91 +96,106 @@ class GUI():
             else:
                 self.invalid.config(text="Invalid username or password")
 
-
     def create_account(self):
-        # Ensure the current window or view is properly destroyed
-        ds.destroy(self)
+        # Destroy the current window content
+        for widget in self.loginWindow.winfo_children():
+            widget.destroy()
 
         # Set up the window for account creation
         self.loginWindow.title('Create Account')
 
-        # Create a frame to hold the widgets
-        self.frame = ttk.Frame(self.loginWindow)
-        self.frame.pack(expand=True)
-        self.loginWindow.bind("<MouseWheel>", lambda event: None)
+        # Define a custom style for larger buttons
+        style = ttk.Style()
+        style.configure("Large.TButton", font=("Arial", 12), padding=(10, 10))
 
-        # Dropdown menu for selecting "Team" or "User"
-        self.role_label = ttk.Label(self.frame, text="Role:")
+        # Main container frame
+        main_frame = tk.Frame(self.loginWindow, bg='white')
+        main_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Left panel
+        left_panel = tk.Frame(main_frame, bg='white', width=500)
+        left_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+        # Styling and Widgets in the Left Panel
+        self.left_content = tk.Frame(left_panel, bg='white')
+        self.left_content.pack(expand=True)
+
+        self.role_label = ttk.Label(self.left_content, text="Role:", font=("Arial", 12))
         self.role_label.grid(row=0, column=0, padx=5, pady=5)
 
-        self.role_combobox = ttk.Combobox(self.frame, state="readonly", values=["Team", "User"])
+        self.role_combobox = ttk.Combobox(self.left_content, state="readonly", values=["Team", "User"],
+                                          font=("Arial", 12))
         self.role_combobox.grid(row=0, column=1, padx=5, pady=5)
-        self.role_combobox.current(0)  # Set default value to "Team"
+        self.role_combobox.current(0)
 
         # Bind selection change to a callback function
         self.role_combobox.bind("<<ComboboxSelected>>", self.toggle_team_entry)
 
         # Username label and entry
-        self.username_label = ttk.Label(self.frame, text="Username:")
+        self.username_label = ttk.Label(self.left_content, text="Username:", font=("Arial", 12))
         self.username_label.grid(row=1, column=0, padx=5, pady=5)
-        self.username_entry = ttk.Entry(self.frame)
+        self.username_entry = ttk.Entry(self.left_content, font=("Arial", 12))
         self.username_entry.grid(row=1, column=1, padx=5, pady=5)
 
         # Password label and entry
-        self.password_label = ttk.Label(self.frame, text="Password:")
+        self.password_label = ttk.Label(self.left_content, text="Password:", font=("Arial", 12))
         self.password_label.grid(row=2, column=0, padx=5, pady=5)
-        self.password_entry = ttk.Entry(self.frame, show="•")
+        self.password_entry = ttk.Entry(self.left_content, font=("Arial", 12), show="•")
         self.password_entry.grid(row=2, column=1, padx=5, pady=5)
 
         # Sign-up button
         self.signup_button = ttk.Button(
-            self.frame,
+            self.left_content,
             text="Sign Up",
             command=lambda: self.check_username(
                 self.username_entry.get(),
                 self.password_entry.get(),
                 self.role_combobox.get(),
-                self.team_entry.get() if self.team_entry else None
+                self.team_entry.get() if hasattr(self, 'team_entry') and self.team_entry else None
             ),
-            width=7,
-            bootstyle="success"
+            style="Large.TButton"  # Use the larger button style
         )
-        self.signup_button.grid(row=4, column=1, columnspan=1, padx=5, pady=10)
-
-        # Bind Return (Enter) key to the sign-up action
-        self.loginWindow.bind(
-            "<Return>",
-            lambda event: self.check_username(
+        self.signup_button.grid(row=7, column=1, padx=20, pady=15)
+        self.loginWindow.bind("<Return>", lambda event: self.check_username(
                 self.username_entry.get(),
                 self.password_entry.get(),
                 self.role_combobox.get(),
-                self.team_entry.get() if self.team_entry else None
-            )
-        )
+                self.team_entry.get() if hasattr(self, 'team_entry') and self.team_entry else None
+            ))
 
         # Feedback labels for duplicate username or success messages
-        self.duplicate = ttk.Label(self.frame, text="", foreground="red")
-        self.duplicate.grid(row=5, column=0, columnspan=2, pady=5)
-        self.success = ttk.Label(self.frame, text="", foreground="green")
-        self.success.grid(row=6, column=0, columnspan=2, pady=5)
+        self.success = ttk.Label(self.left_content, text="", foreground="green")
+        self.success.grid(row=5, column=0, columnspan=2, pady=5)
 
         # Label for invalid login attempts
-        self.invalid = ttk.Label(self.frame, text="", foreground="red")
-        self.invalid.grid(row=6, column=0, columnspan=2, pady=5)
+        self.invalid = ttk.Label(self.left_content, text="", foreground="red")
+        self.invalid.grid(row=5, column=0, columnspan=2, pady=5)
 
         # Label for valid login attempts
-        self.valid = ttk.Label(self.frame, text="", foreground="green")
-        self.valid.grid(row=7, column=0, columnspan=2, pady=5)
+        self.valid = ttk.Label(self.left_content, text="", foreground="green")
+        self.valid.grid(row=6, column=0, columnspan=2, pady=5)
 
         # Button to return to the login window
         self.tologin_button = ttk.Button(
-            self.frame,
-            text="Login",
+            self.left_content,
+            text="Back To Login",
             command=self.login_Window,
-            width=7,
-            bootstyle="dark"
+            style="Link.TButton"  # Use the larger button style
         )
-        self.tologin_button.grid(row=8, column=0, columnspan=2, padx=5, pady=10)
+        self.tologin_button.grid(row=8, column=1, columnspan=2, padx=20, pady=15)
+
+        # Right panel for artwork
+        right_panel = tk.Frame(main_frame, bg='white', width=500)
+        right_panel.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
+
+        # Load and Display the Image
+        image = Image.open("login.png")  # Replace with your actual image path
+        image = image.resize((650, 800), Image.Resampling.LANCZOS)  # Resize to the panel's full dimensions
+        image_tk = ImageTk.PhotoImage(image)
+
+        self.image_label = tk.Label(right_panel, image=image_tk, bg='white')
+        self.image_label.image = image_tk  # Keep a reference to avoid garbage collection
+        self.image_label.pack(fill=tk.BOTH, expand=True)  # Ensure it fills the entire panel
 
         # Placeholder for team label and entry
         self.team_label = None
@@ -172,10 +208,12 @@ class GUI():
         if selected_role == "User":
             # If "User" is selected, add the team label and entry if not already present
             if self.team_label is None and self.team_entry is None:
-                self.team_label = ttk.Label(self.frame, text="Team:")
+                self.team_label = ttk.Label(self.left_content, text="Team:")
                 self.team_label.grid(row=3, column=0, padx=5, pady=5)
-                self.team_entry = ttk.Entry(self.frame)
+                self.team_entry = ttk.Entry(self.left_content)
                 self.team_entry.grid(row=3, column=1, padx=5, pady=5)
+
+
         elif selected_role == "Team":
             # If "Team" is selected, remove the team label and entry if present
             if self.team_label is not None:
@@ -185,36 +223,28 @@ class GUI():
                 self.team_entry.destroy()
                 self.team_entry = None
 
-
     def check_username(self, username, password, role, team):
         if role == "Team":
             if db.checkTeamduplicates(username):
                 db.add_team(username, password)
-                try:
-                    self.invalid.destroy()
-                except Exception:
-                    pass
-                self.valid.config(text="team added successfully")
-
+                self.invalid.config(text="")  # Clear invalid message
+                self.valid.config(text="Team added successfully")
             else:
-                self.invalid.config(text="team name already exists")
+                self.invalid.config(text="Team name already exists")
+                self.valid.config(text="")  # Clear valid message
         elif role == "User":
+            self.invalid.config(text="")  # Clear invalid message
             if db.checkUserduplicates(username):
-                if db.checkTeamduplicates(team):
-                    self.invalid.config(text="Invalid team name and your not assigned to a team")
-                    self.valid.config(text="user added successfully")
-                    db.add_user(username, password, None)
+                if not db.checkTeamduplicates(team):
+                    db.add_user(username, password, team)
+                    self.valid.config(text="User added successfully")
                 else:
                     db.add_user(username, password, team)
-                    try:
-                        self.invalid.destroy()
-                    except Exception:
-                        pass
-                    self.valid.config(text="user added successfully")
-
+                    self.invalid.config(text="Invalid team name or team not assigned")
+                    self.valid.config(text="User added successfully")
             else:
-                self.invalid.config(text="username already exists")
-
+                self.invalid.config(text="Username already exists")
+                self.valid.config(text="")
 
     def draw_custom_progress_bar(self, canvas, width, height, completion_percentage):
         """
@@ -241,6 +271,10 @@ class GUI():
     def user(self, username):
         # Destroy previous UI components
         ds.destroy(self)
+
+        # Destroy current content
+        for widget in self.loginWindow.winfo_children():
+            widget.destroy()
 
         # Set up the main user window
         self.loginWindow.geometry('800x600')
@@ -502,6 +536,10 @@ class GUI():
     def team(self, teamname):
         # Destroy previous UI components
         ds.destroy(self)
+
+        # Destroy current content
+        for widget in self.loginWindow.winfo_children():
+            widget.destroy()
 
         # Set up the main team window
         self.loginWindow.geometry('800x600')
