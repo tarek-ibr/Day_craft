@@ -125,7 +125,7 @@ class GUI():
 
         self.role_combobox = ttk.Combobox(self.left_content, state="readonly", values=["Team", "User"],
                                           font=("Arial", 12))
-        self.role_combobox.grid(row=0, column=1, padx=5, pady=5)
+        self.role_combobox.grid(row=1, column=0, padx=5, pady=5)
         self.role_combobox.current(0)
 
         # Bind selection change to a callback function
@@ -133,15 +133,15 @@ class GUI():
 
         # Username label and entry
         self.username_label = ttk.Label(self.left_content, text="Username:", font=("Arial", 12))
-        self.username_label.grid(row=1, column=0, padx=5, pady=5)
+        self.username_label.grid(row=2, column=0, padx=5, pady=5)
         self.username_entry = ttk.Entry(self.left_content, font=("Arial", 12))
-        self.username_entry.grid(row=1, column=1, padx=5, pady=5)
+        self.username_entry.grid(row=3, column=0, padx=5, pady=5)
 
         # Password label and entry
         self.password_label = ttk.Label(self.left_content, text="Password:", font=("Arial", 12))
-        self.password_label.grid(row=2, column=0, padx=5, pady=5)
+        self.password_label.grid(row=4, column=0, padx=5, pady=5)
         self.password_entry = ttk.Entry(self.left_content, font=("Arial", 12), show="•")
-        self.password_entry.grid(row=2, column=1, padx=5, pady=5)
+        self.password_entry.grid(row=5, column=0, padx=5, pady=5)
 
         # Sign-up button
         self.signup_button = ttk.Button(
@@ -155,7 +155,7 @@ class GUI():
             ),
             style="Large.TButton"  # Use the larger button style
         )
-        self.signup_button.grid(row=7, column=1, padx=20, pady=15)
+        self.signup_button.grid(row=11, column=0, padx=20, pady=15)
         self.loginWindow.bind("<Return>", lambda event: self.check_username(
                 self.username_entry.get(),
                 self.password_entry.get(),
@@ -165,15 +165,15 @@ class GUI():
 
         # Feedback labels for duplicate username or success messages
         self.success = ttk.Label(self.left_content, text="", foreground="green")
-        self.success.grid(row=5, column=0, columnspan=2, pady=5)
+        self.success.grid(row=8, column=0, columnspan=2, pady=5)
 
         # Label for invalid login attempts
         self.invalid = ttk.Label(self.left_content, text="", foreground="red")
-        self.invalid.grid(row=5, column=0, columnspan=2, pady=5)
+        self.invalid.grid(row=9, column=0, columnspan=2, pady=5)
 
         # Label for valid login attempts
         self.valid = ttk.Label(self.left_content, text="", foreground="green")
-        self.valid.grid(row=6, column=0, columnspan=2, pady=5)
+        self.valid.grid(row=10, column=0, columnspan=2, pady=5)
 
         # Button to return to the login window
         self.tologin_button = ttk.Button(
@@ -182,7 +182,7 @@ class GUI():
             command=self.login_Window,
             style="Link.TButton"  # Use the larger button style
         )
-        self.tologin_button.grid(row=8, column=1, columnspan=2, padx=20, pady=15)
+        self.tologin_button.grid(row=12, column=0, columnspan=2, padx=20, pady=15)
 
         # Right panel for artwork
         right_panel = tk.Frame(main_frame, bg='white', width=500)
@@ -195,7 +195,9 @@ class GUI():
 
         self.image_label = tk.Label(right_panel, image=image_tk, bg='white')
         self.image_label.image = image_tk  # Keep a reference to avoid garbage collection
-        self.image_label.pack(fill=tk.BOTH, expand=True)  # Ensure it fills the entire panel
+
+        # Adjust the packing to dock the image to the right
+        self.image_label.pack(side="right", anchor="e", fill=tk.Y, expand=False)
 
         # Placeholder for team label and entry
         self.team_label = None
@@ -208,10 +210,10 @@ class GUI():
         if selected_role == "User":
             # If "User" is selected, add the team label and entry if not already present
             if self.team_label is None and self.team_entry is None:
-                self.team_label = ttk.Label(self.left_content, text="Team:")
-                self.team_label.grid(row=3, column=0, padx=5, pady=5)
-                self.team_entry = ttk.Entry(self.left_content)
-                self.team_entry.grid(row=3, column=1, padx=5, pady=5)
+                self.team_label = ttk.Label(self.left_content, text="Team:", font=("Arial", 12))
+                self.team_label.grid(row=6, column=0, padx=5, pady=5)
+                self.team_entry = ttk.Entry(self.left_content, font=("Arial", 12))
+                self.team_entry.grid(row=7, column=0, padx=5, pady=5)
 
 
         elif selected_role == "Team":
