@@ -295,8 +295,14 @@ class GUI():
         self.duration_entry = ttk.Entry(self.loginWindow)
         self.duration_entry.place(x=290, y=20, width=100)
 
+        # list all tasks Button
+        self.list_button = ttk.Button(self.loginWindow, text="List all tasks", bootstyle="primary",
+                                         command=lambda: self.list_user(username))
+        self.list_button.place(x=520, y=20)
+
+
         # Refresh Button
-        self.refresh_button = ttk.Button(self.loginWindow, text="Refresh", bootstyle="warning", command=lambda: self.refresh_user(username, self.duration_entry.get()))
+        self.refresh_button = ttk.Button(self.loginWindow, text="Refresh", bootstyle="primary", command=lambda: self.refresh_user(username, self.duration_entry.get()))
         self.refresh_button.place(x=720, y=20)
 
         # Calendar/Task List Section
@@ -377,12 +383,16 @@ class GUI():
         prerequisite_label.grid(row=5, column=0)
 
         # Retrieve tasks for the user and populate dropdown
-        user_tasks = db.get_user_tasks(username)
+        user_tasks = db.get_user_tasks(username) or []  # Fallback to empty list if None or invalid
         task_names = [task[1] for task in user_tasks]  # Assuming task name is at index 1
-        task_names.append("None")  # Add "None" as a default option for no prerequisite
+        task_names.insert(0, "None")  # Insert "None" as the first element
+        task_names.append("None")
 
+        # Create a StringVar to track the selected prerequisite
         prerequisite_var = tk.StringVar(new_window)
         prerequisite_var.set("None")  # Set default value to "None"
+
+        # Create an OptionMenu for prerequisites
         prerequisite_menu = ttk.OptionMenu(new_window, prerequisite_var, *task_names)
         prerequisite_menu.grid(row=5, column=1, pady=1)
 
@@ -434,12 +444,92 @@ class GUI():
                                command=lambda: [add_task_to_db()])
         add_button.grid(row=6, column=0, columnspan=2)
 
+    def list_user(self, username):
+        # Clear any existing error message
+        if hasattr(self, "error_label") and self.error_label:
+            self.error_label.destroy()
+
+        # Fetch tasks
+        user_tasks = db.get_user_tasks(username)
+
+        # Clear the task frame before adding new tasks
+        for widget in self.task_frame.winfo_children():
+            widget.destroy()
+
+        # Add a scrollbar for vertical scrolling
+        canvas = tk.Canvas(self.task_frame)
+        scrollbar = ttk.Scrollbar(self.task_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        if user_tasks:
+            max_width = 500  # Maximum width for a task bar
+
+            for task in user_tasks:
+                task_name = task[1]  # Assuming task name is at index 1
+                task_done = task[6] == 1  # Assuming completion status is at index 6 (1 means done)
+
+                # Create a frame for each task row
+                task_row = ttk.Frame(scrollable_frame)
+                task_row.pack(fill="x", pady=5, padx=10)
+
+                # Initialize the BooleanVar to reflect the task's completion status
+                var = tk.BooleanVar(value=task_done)
+
+                # Create a read-only Checkbutton
+                task_checkbox = ttk.Checkbutton(
+                    task_row,
+                    variable=var,
+                    state="disabled"  # Make it read-only
+                )
+                task_checkbox.pack(side="left", padx=10)
+
+                # Canvas for task bar
+                task_canvas = tk.Canvas(task_row, height=30, width=max_width, bg="white")
+                task_canvas.pack(side="left", padx=10, fill="x", expand=True)
+
+                # Draw a proportional bar for the task
+                task_canvas.create_rectangle(0, 0, max_width, 30, fill="blue")
+
+                # Add task name as text inside the bar
+                task_canvas.create_text(
+                    max_width / 2, 15, text=task_name, fill="white", anchor="center", font=("Arial", 12, "bold")
+                )
+        else:
+            no_task_label = ttk.Label(scrollable_frame, text="No tasks available for the specified duration.",
+                                      foreground="red")
+            no_task_label.pack(pady=10)
+
+        tasks = db.get_user_tasks(username)
+
+        # Update the progress bar with the new completion percentage
+        done_counter = sum(1 for task in tasks if task[6] == 1)  # Count completed tasks
+        total_counter = len(tasks)  # Count total tasks
+
+        if total_counter > 0:
+            completion_percentage = (done_counter / total_counter) * 100
+        else:
+            completion_percentage = 0  # Avoid division by zero when there are no tasks
+
+        self.progress_canvas.delete("all")  # Clear the canvas
+        self.draw_custom_progress_bar(self.progress_canvas, 300, 30, completion_percentage)
+
     def refresh_user(self, username, duration):
         # Validate duration input
         if not (duration.isdigit() and int(duration) > 0):  # Ensure duration is numeric and positive
             self.error_label = ttk.Label(self.loginWindow, text="Duration must be a positive number!", foreground="red",
                                          font=("Comic Sans MS", 10))
-            self.error_label.place(x=400, y=20)
+            self.error_label.place(x=250, y=370)
             return
 
         # Clear any existing error message
@@ -624,22 +714,34 @@ class GUI():
 
         prerequisite_label = ttk.Label(new_window, text="Prerequisite of the task if there any", font=("Comic Sans MS", 12))
         prerequisite_label.grid(row=5, column=0)
-        prerequisite_entry = ttk.Entry(new_window, font=("Comic Sans MS", 10))
-        prerequisite_entry.grid(row=5, column=1, pady=1)
 
-        def add_task_to_db():  # Function to add the task to the database
+        # Retrieve tasks for the user and populate dropdown
+        team_tasks = db.get_team_tasks(teamname) or []  # Fallback to empty list if None or invalid
+        task_names = [task[1] for task in team_tasks]  # Assuming task name is at index 1
+        task_names.insert(0, "None")  # Insert "None" as the first element
+        task_names.append("None")
+
+        # Create a StringVar to track the selected prerequisite
+        prerequisite_var = tk.StringVar(new_window)
+        prerequisite_var.set("None")  # Set default value to "None"
+
+        # Create an OptionMenu for prerequisites
+        prerequisite_menu = ttk.OptionMenu(new_window, prerequisite_var, *task_names)
+        prerequisite_menu.grid(row=5, column=1, pady=1)
+
+        def add_team_task_to_db():  # Function to add the task to the database
             name = name_entry.get()
             priority = priority_entry.get()
             time = time_entry.get()
             category = category_entry.get() # Correctly retrieve text from Text widget
-            prerequisite = prerequisite_entry.get()  # Correctly retrieve text from Text widget
+            prerequisite = prerequisite_var.get()  # Correctly retrieve text from Text widget
 
             # Clear any previous error message
             if hasattr(self, "error_label") and self.error_label:
                 self.error_label.destroy()
 
             # Validate fields
-            if not name.isalpha():  # Ensure name contains only alphabetic characters
+            if not name.replace(" ", "").isalpha():  # Ensure name contains only alphabetic characters
                 self.error_label = ttk.Label(new_window, text="Name must contain only letters!", foreground="red",
                                              font=("Comic Sans MS", 10))
                 self.error_label.grid(row=7, column=0, columnspan=2, pady=5)
@@ -663,11 +765,10 @@ class GUI():
                 self.error_label.grid(row=7, column=0, columnspan=2, pady=5)
                 return
 
-            if not prerequisite.replace(" ", "").isalpha():  # Ensure prerequisite is text (allows spaces)
-                self.error_label = ttk.Label(new_window, text="Prerequisite must contain only letters and spaces!",
-                                             foreground="red", font=("Comic Sans MS", 10))
-                self.error_label.grid(row=7, column=0, columnspan=2, pady=5)
-                return
+            # Add the task to the database if all validations pass
+            prerequisite = None if prerequisite == "None" else prerequisite
+            if prerequisite == "None":
+                prerequisite = None
 
             # Add the task to the database if all validations pass
             db.add_team_task(teamname, name, int(priority), int(time), category, prerequisite)
@@ -675,7 +776,7 @@ class GUI():
             self.team(teamname)
 
         add_button = tk.Button(new_window, text="Add Task", font=("Comic Sans MS", 12), foreground="blue",
-                               command=lambda: [add_task_to_db()])
+                               command=lambda: [add_team_task_to_db()])
         add_button.grid(row=6, column=0, columnspan=2)
 
     def refresh_team(self):

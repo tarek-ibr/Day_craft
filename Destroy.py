@@ -174,4 +174,14 @@ def destroy(self):
     except Exception:
         pass
 
+    try:
+        self.prerequisite_menu()
+    except Exception:
+        pass
+
+    try:
+        self.list_button()
+    except Exception:
+        pass
+
 
