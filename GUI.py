@@ -6,8 +6,8 @@ import functions as fn
 from tkinter import IntVar, Canvas
 from functools import partial #for mark as complete
 from PIL import Image, ImageTk  # For handling images
-import winsound
-
+import pygame
+import time
 
 
 
@@ -22,7 +22,7 @@ class GUI():
         for widget in self.loginWindow.winfo_children():
             widget.destroy()
 
-        self.loginWindow.geometry('1000x800')
+        self.loginWindow.geometry('950x800')
         self.loginWindow.title('Login')
         self.loginWindow.resizable(False, False)
 
@@ -385,6 +385,13 @@ class GUI():
         self.remaining_time = 1500  # 25 minutes
         self.update_timer_display()
 
+    def play_alarm(self):
+        pygame.mixer.init()
+        sound = pygame.mixer.Sound('alarm.mp3')
+        for _ in range(2):  # Repeat the sound 3 times
+            sound.play()
+            time.sleep(1)
+
     def update_timer(self):
         """Update the timer display."""
         if self.is_timer_running and self.remaining_time > 0:
@@ -395,9 +402,7 @@ class GUI():
         elif self.remaining_time == 0:
             self.is_timer_running = False
             self.timer_label.config(text="Time's up!")
-            # Play a system-defined alarm sound
-            winsound.Beep(1000, 500)  # Frequency: 1000 Hz, Duration: 500 ms
-            winsound.Beep(1200, 500)
+            self.play_alarm()  # Call the custom alarm function
 
     def update_timer_display(self):
         """Manually update the timer display."""
