@@ -952,7 +952,7 @@ class GUI():
                 task_checkbox = ttk.Checkbutton(
                     task_row,
                     variable=var,
-                    command=partial(self.done, task, var)
+                    command=partial(self.doneTeam, task, var)
                 )
                 task_checkbox.pack(side="left", padx=10)
 
@@ -985,3 +985,13 @@ class GUI():
 
         self.progress_canvas.delete("all")  # Clear the canvas
         self.draw_custom_progress_bar(self.progress_canvas, 300, 30, completion_percentage)
+
+    def doneTeam(self, task, var):
+        """Handles checkbox state changes."""
+        try:
+            if var.get():  # Check if the checkbox is checked
+                db.edit_team_task(task[0], task[1], task[2], task[3], task[4], task[5], 1)
+            else:
+                db.edit_team_task(task[0], task[1], task[2], task[3], task[4], task[5], 0)
+        except Exception as e:
+            print(f"Error in done function: {e}")
