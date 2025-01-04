@@ -71,8 +71,6 @@ def get_tasks(username, duration):
 def get_shortest_path_to_tasks(username, duration):
     pass
 
-
-# Step 1: Build Directed Graph
 def build_task_graph_with_prerequisites(teamname):
     task_graph = nx.DiGraph()
     tasks = db.get_team_tasks(teamname)
@@ -81,10 +79,10 @@ def build_task_graph_with_prerequisites(teamname):
     for task in tasks:
         taskname = task[1]
         prerequisite = task[5]
-
-        task_graph.add_node(taskname)
-        if prerequisite:
-            task_graph.add_edge(prerequisite, taskname)  # prerequisite → taskname
+        if task[6] == 0:
+            task_graph.add_node(taskname)
+            if prerequisite:
+                task_graph.add_edge(prerequisite, taskname)  # prerequisite → taskname
 
     return task_graph
 
@@ -94,32 +92,96 @@ def cluster_tasks(graph):
     Clusters tasks in a graph based on connected components.
 
     Args:
-        graph (nx.Graph or nx.DiGraph): The graph representing tasks and dependencies.
+        graph (nx.DiGraph): The directed graph representing tasks and dependencies.
 
     Returns:
         clusters (list of sets): Each set represents a cluster of tasks.
     """
-    # For directed graphs, convert to undirected to find clusters
     if isinstance(graph, nx.DiGraph):
-        undirected_graph = graph.to_undirected()
+        # Use weakly connected components for directed graphs
+        clusters = list(nx.weakly_connected_components(graph))
     else:
-        undirected_graph = graph
-
-    # Find clusters (connected components)
-    clusters = list(nx.connected_components(undirected_graph))
+        # Use connected components for undirected graphs
+        clusters = list(nx.connected_components(graph))
 
     return clusters
 
 
-# Step 4: Schedule Tasks Within Each Cluster
-def schedule_tasks(clusters, graph):
-    for cluster in clusters:
-        cluster_graph = graph.subgraph(cluster)
-        sorted_tasks = list(nx.topological_sort(cluster_graph))  # Use topological sort for prerequisites
-        print(f"Schedule for cluster: {sorted_tasks}")
-
 def get_user_from_team_tasks(teamname, username, duration):
+    """
+    Retrieve tasks for a user from the team's tasks, grouped into clusters.
+
+    Args:
+        teamname (str): The name of the team.
+        username (str): The username of the user.
+        duration (int): The duration threshold for filtering tasks.
+
+    Returns:
+        list: A list of tasks assigned to the user.
+    """
+    # Build the task graph using the teamname
     task_graph = build_task_graph_with_prerequisites(teamname)
-    clusters =  cluster_tasks(task_graph)
-    for cluster in clusters:
-        print(cluster)
+
+    # Cluster the tasks
+    clusters = cluster_tasks(task_graph)
+
+    # Dictionary to store clusters and their associated data
+    cluster_dic = {}
+
+    for cl in clusters:
+        task_list = []
+        total_duration = 0
+
+        for taskname in cl:
+            task = db.searchTasksByTaskname(taskname)
+            if task:
+                total_duration += task[3]  # Assuming task[3] is the duration
+                task_list.append(task)
+
+        cluster_dic[f"Cluster_{len(cluster_dic) + 1}"] = {
+            "tasks": task_list,
+            "total_duration": total_duration,
+        }
+
+    sorted_clusters = dict(sorted(cluster_dic.items(), key=lambda item: item[1]["total_duration"]))
+
+    try:
+        user_list = db.get_team_users(teamname) or []
+    except Exception as e:
+        print(f"Error retrieving team users: {e}")
+        user_list = []
+
+    user_task_durations = {}
+
+    for user in user_list:
+        username_of_user = user
+        user_tasks = db.get_user_tasks(username_of_user)
+        total_duration_user_tasks = sum(task[3] for task in user_tasks if task[6] == 0)
+        user_task_durations[username_of_user] = total_duration_user_tasks
+
+    # Sort the dictionary by total_duration_user_tasks in ascending order
+    sorted_user_task_durations = dict(sorted(user_task_durations.items(), key=lambda item: item[1]))
+
+    users_tasks = []
+
+    for cl, dic in sorted_clusters.items():
+        task_list = dic["tasks"]
+        duration = dic["total_duration"]
+
+        # Assign tasks to the user with the lowest total duration
+        user_with_lowest_duration = next(iter(sorted_user_task_durations))
+        users_tasks.append((user_with_lowest_duration, task_list))
+
+        # Update the user's total duration
+        sorted_user_task_durations[user_with_lowest_duration] += duration
+
+        # Re-sort the dictionary after updating
+        sorted_user_task_durations = dict(sorted(sorted_user_task_durations.items(), key=lambda item: item[1]))
+
+    user_of_team_tasks = []
+    for n, t in users_tasks:
+        if n == username:
+            for ta in t:
+                user_of_team_tasks.append(ta)
+
+    return user_of_team_tasks

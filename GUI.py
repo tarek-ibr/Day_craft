@@ -284,7 +284,8 @@ class GUI():
         self.loginWindow.resizable(True, True)
 
         # Add Task Button
-        self.add_task_button = ttk.Button(self.loginWindow, text="Add Task", bootstyle="primary", command=lambda: self.add_task_user(username))
+        self.add_task_button = ttk.Button(self.loginWindow, text="Add Task", bootstyle="primary",
+                                          command=lambda: self.add_task_user(username))
         self.add_task_button.place(x=20, y=20)
 
         # Duration Entry Label
@@ -295,14 +296,14 @@ class GUI():
         self.duration_entry = ttk.Entry(self.loginWindow)
         self.duration_entry.place(x=290, y=20, width=100)
 
-        # list all tasks Button
+        # List all tasks Button
         self.list_button = ttk.Button(self.loginWindow, text="List all tasks", bootstyle="primary",
-                                         command=lambda: self.list_user(username))
+                                      command=lambda: self.list_user(username))
         self.list_button.place(x=520, y=20)
 
-
         # Refresh Button
-        self.refresh_button = ttk.Button(self.loginWindow, text="Refresh", bootstyle="primary", command=lambda: self.refresh_user(username, self.duration_entry.get()))
+        self.refresh_button = ttk.Button(self.loginWindow, text="Refresh", bootstyle="primary",
+                                         command=lambda: self.refresh_user(username, self.duration_entry.get()))
         self.refresh_button.place(x=720, y=20)
 
         # Calendar/Task List Section
@@ -313,33 +314,41 @@ class GUI():
         self.task_list = tk.Listbox(self.task_frame, height=10, width=80)
         self.task_list.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # # Initialize canvas
-        # self.canvas = tk.Canvas(self.loginWindow, width=600, height=60, bg="white")
-        # self.canvas.place(x=50, y=300)  # Adjust position as needed
+        # Pomodoro Timer Section
+        self.pomodoro_frame = ttk.Labelframe(self.loginWindow, text="Pomodoro Timer")
+        self.pomodoro_frame.place(x=20, y=400, width=300, height=150)
+
+        # Timer Display
+        self.timer_label = ttk.Label(self.pomodoro_frame, text="25:00", font=("Arial", 24))
+        self.timer_label.pack(pady=10)
+
+        # Timer Buttons
+        self.start_button = ttk.Button(self.pomodoro_frame, text="Start", bootstyle="success", command=self.start_timer)
+        self.start_button.pack(side="left", padx=10)
+
+        self.pause_button = ttk.Button(self.pomodoro_frame, text="Pause", bootstyle="warning", command=self.pause_timer)
+        self.pause_button.pack(side="left", padx=10)
+
+        self.reset_button = ttk.Button(self.pomodoro_frame, text="Reset", bootstyle="danger", command=self.reset_timer)
+        self.reset_button.pack(side="left", padx=10)
 
         # Performance Section
         self.performance_frame = ttk.Labelframe(self.loginWindow, text="Performance")
-        self.performance_frame.place(x=20, y=400, width=760, height=150)
+        self.performance_frame.place(x=340, y=400, width=440, height=150)
 
         # Placeholder content for performance
         self.performance_label = ttk.Label(self.performance_frame, text="Performance metrics will be shown here.")
         self.performance_label.pack(pady=10)
 
         # Task Completion Rate
-        # Inside the user method or wherever you're creating the performance section
         self.completion_label = ttk.Label(self.performance_frame, text="Task Completion Rate:")
         self.completion_label.pack(pady=5)
 
         # Custom Progress Bar
-
-
-        # Initialize the canvas for the custom progress bar
         self.progress_canvas = Canvas(self.performance_frame, width=300, height=30, bg="white", highlightthickness=0)
         self.progress_canvas.pack()
 
-
         tasks = db.get_user_tasks(username)
-        # Update the progress bar with the new completion percentage
         done_counter = sum(1 for task in tasks if task[6] == 1)  # Count completed tasks
         total_counter = len(tasks)  # Count total tasks
         if total_counter > 0:
@@ -353,6 +362,43 @@ class GUI():
         self.logout_button = ttk.Button(self.loginWindow, text="Log Out", bootstyle="danger",
                                         command=self.login_Window)  # Navigate back to login window
         self.logout_button.place(x=20, y=550)
+
+        # Initialize Timer Variables
+        self.is_timer_running = False
+        self.remaining_time = 1500  # Default 25 minutes (in seconds)
+
+    def start_timer(self):
+        """Start the Pomodoro timer."""
+        if not self.is_timer_running:
+            self.is_timer_running = True
+            self.update_timer()
+
+    def pause_timer(self):
+        """Pause the Pomodoro timer."""
+        self.is_timer_running = False
+
+    def reset_timer(self):
+        """Reset the Pomodoro timer to default."""
+        self.is_timer_running = False
+        self.remaining_time = 1500  # 25 minutes
+        self.update_timer_display()
+
+    def update_timer(self):
+        """Update the timer display."""
+        if self.is_timer_running and self.remaining_time > 0:
+            minutes, seconds = divmod(self.remaining_time, 60)
+            self.timer_label.config(text=f"{minutes:02}:{seconds:02}")
+            self.remaining_time -= 1
+            self.loginWindow.after(1000, self.update_timer)  # Call this method every second
+        elif self.remaining_time == 0:
+            self.is_timer_running = False
+            self.timer_label.config(text="Time's up!")
+            # You can add a sound or notification here.
+
+    def update_timer_display(self):
+        """Manually update the timer display."""
+        minutes, seconds = divmod(self.remaining_time, 60)
+        self.timer_label.config(text=f"{minutes:02}:{seconds:02}")
 
     def add_task_user(self, username):
         new_window = tk.Toplevel(self.loginWindow)  # Create a new window
@@ -528,7 +574,6 @@ class GUI():
         """Delete a task and refresh the task list."""
         result = db.delete_user_task(username, taskname)
         if result:
-            print(f"Task '{taskname}' deleted successfully.")
             self.list_user(username)  # Refresh the task list
         else:
             print(f"Failed to delete task '{taskname}'.")
@@ -685,18 +730,47 @@ class GUI():
         self.task_frame = ttk.Labelframe(self.loginWindow, text="Task List")
         self.task_frame.place(x=20, y=120, width=760, height=200)
 
-        # Placeholder content for task list
+        # Calendar/Task List Section
+        self.task_frame = ttk.Labelframe(self.loginWindow, text="Calendar or Task List")
+        self.task_frame.place(x=20, y=110, width=760, height=300)
+
+        # Placeholder content for tasks
         self.task_list = tk.Listbox(self.task_frame, height=10, width=80)
         self.task_list.pack(fill="both", expand=True, padx=10, pady=10)
-        self.load_team_tasks(teamname)  # Populate the task list
+
+        # # Initialize canvas
+        # self.canvas = tk.Canvas(self.loginWindow, width=600, height=60, bg="white")
+        # self.canvas.place(x=50, y=300)  # Adjust position as needed
 
         # Performance Section
         self.performance_frame = ttk.Labelframe(self.loginWindow, text="Performance")
-        self.performance_frame.place(x=20, y=340, width=760, height=200)
+        self.performance_frame.place(x=20, y=400, width=760, height=150)
 
         # Placeholder content for performance
         self.performance_label = ttk.Label(self.performance_frame, text="Performance metrics will be shown here.")
         self.performance_label.pack(pady=10)
+
+        # Task Completion Rate
+        # Inside the user method or wherever you're creating the performance section
+        self.completion_label = ttk.Label(self.performance_frame, text="Task Completion Rate:")
+        self.completion_label.pack(pady=5)
+
+        # Custom Progress Bar
+
+        # Initialize the canvas for the custom progress bar
+        self.progress_canvas = Canvas(self.performance_frame, width=300, height=30, bg="white", highlightthickness=0)
+        self.progress_canvas.pack()
+
+        tasks = db.get_team_tasks(teamname)
+        # Update the progress bar with the new completion percentage
+        done_counter = sum(1 for task in tasks if task[6] == 1)  # Count completed tasks
+        total_counter = len(tasks)  # Count total tasks
+        if total_counter > 0:
+            completion_percentage = (done_counter / total_counter) * 100
+        else:
+            completion_percentage = 0  # Avoid division by zero when there are no tasks
+
+        self.draw_custom_progress_bar(self.progress_canvas, 300, 30, (done_counter / total_counter) * 100)
 
         # Log Out Button
         self.logout_button = ttk.Button(self.loginWindow, text="Log Out", bootstyle="danger",
@@ -814,7 +888,6 @@ class GUI():
         add_button.grid(row=6, column=0, columnspan=2)
 
     def refresh_team(self, teamname, username, duration):
-        fn.get_user_from_team_tasks(teamname, username, duration)
 
         # Validate duration input
         if not (duration.isdigit() and int(duration) > 0):  # Ensure duration is numeric and positive
@@ -835,7 +908,7 @@ class GUI():
             self.error_label.destroy()
 
         # Fetch tasks
-        tasks = fn.get_tasks(username, duration)
+        tasks = fn.get_user_from_team_tasks(teamname, username, duration)
 
         # Clear the task frame before adding new tasks
         for widget in self.task_frame.winfo_children():
@@ -899,7 +972,7 @@ class GUI():
                                       foreground="red")
             no_task_label.pack(pady=10)
 
-        tasks = db.get_user_tasks(username)
+        tasks = db.get_team_tasks(teamname)
 
         # Update the progress bar with the new completion percentage
         done_counter = sum(1 for task in tasks if task[6] == 1)  # Count completed tasks

@@ -40,6 +40,29 @@ def searchByTeamname(n):
     return teamlist if row else None
 
 
+def searchTasksByTaskname(taskname):
+    db_path = "db.sqlite"
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM teamTasks WHERE taskname = ?", (taskname,))
+    row = cursor.fetchone()
+
+    taskList = []
+    if row:
+        taskList.append(row[0])
+        taskList.append(row[1])
+        taskList.append(row[2])
+        taskList.append(row[3])
+        taskList.append(row[4])
+        taskList.append(row[5])
+        taskList.append(row[6])
+
+    conn.commit()
+    conn.close()
+
+    return taskList if row else None
+
 def authenticateUser(username, password):
     db_path = "db.sqlite"
     conn = sqlite3.connect(db_path)
