@@ -660,13 +660,12 @@ class GUI():
         self.duration_entry = ttk.Entry(self.loginWindow)
         self.duration_entry.place(x=290, y=20, width=100)
 
-        # Refresh Button
-        self.refresh_button = ttk.Button(self.loginWindow, text="Refresh", bootstyle="warning",
-                                         command=self.refresh_team)
-        self.refresh_button.place(x=720, y=20)
-
         # Dropdown for Each Person
-        user_list = db.get_team_users(teamname)  # Retrieve user list from the database
+        try:
+            user_list = db.get_team_users(teamname) or []  # Ensure user_list is valid
+        except Exception as e:
+            print(f"Error retrieving team users: {e}")
+            user_list = []
 
         self.dropdown_label = ttk.Label(self.loginWindow, text="Select Team Member:")
         self.dropdown_label.place(x=20, y=70)
@@ -674,6 +673,13 @@ class GUI():
         # Dynamically populate the dropdown with the user list
         self.person_combobox = ttk.Combobox(self.loginWindow, state="readonly", values=user_list)
         self.person_combobox.place(x=175, y=70, width=200)
+        self.person_combobox.set(user_list[0] if user_list else "")  # Set a default value if the list is not empty
+
+        # Refresh Button
+        self.refresh_button = ttk.Button(self.loginWindow, text="Refresh", bootstyle="primary",
+                                         command=lambda: self.refresh_team(teamname, self.person_combobox.get(),
+                                                                           self.duration_entry.get()))
+        self.refresh_button.place(x=720, y=20)
 
         # Task List Section
         self.task_frame = ttk.Labelframe(self.loginWindow, text="Task List")
@@ -682,6 +688,7 @@ class GUI():
         # Placeholder content for task list
         self.task_list = tk.Listbox(self.task_frame, height=10, width=80)
         self.task_list.pack(fill="both", expand=True, padx=10, pady=10)
+        self.load_team_tasks(teamname)  # Populate the task list
 
         # Performance Section
         self.performance_frame = ttk.Labelframe(self.loginWindow, text="Performance")
@@ -695,6 +702,18 @@ class GUI():
         self.logout_button = ttk.Button(self.loginWindow, text="Log Out", bootstyle="danger",
                                         command=self.login_Window)  # Navigate back to login window
         self.logout_button.place(x=20, y=550)
+
+    def load_team_tasks(self, teamname):
+        """Populate the task list with tasks for the team."""
+        try:
+            tasks = db.get_team_tasks(teamname)  # Replace with your database query for tasks
+            if tasks:
+                for task in tasks:
+                    self.task_list.insert(tk.END, f"{task[0]}: {task[1]}")  # Example: Display taskname
+            else:
+                self.task_list.insert(tk.END, "No tasks available.")
+        except Exception as e:
+            self.task_list.insert(tk.END, f"Error loading tasks: {e}")
 
     def add_task_team(self, teamname):
         new_window = tk.Toplevel(self.loginWindow)  # Create a new window
@@ -794,5 +813,102 @@ class GUI():
                                command=lambda: [add_team_task_to_db()])
         add_button.grid(row=6, column=0, columnspan=2)
 
-    def refresh_team(self):
-        pass
+    def refresh_team(self, teamname, username, duration):
+        fn.get_user_from_team_tasks(teamname, username, duration)
+
+        # Validate duration input
+        if not (duration.isdigit() and int(duration) > 0):  # Ensure duration is numeric and positive
+            self.error_label = ttk.Label(self.loginWindow, text="Duration must be a positive number!", foreground="red",
+                                         font=("Comic Sans MS", 10))
+            self.error_label.place(x=250, y=370)
+            return
+
+            # Validate fields
+        if not username.replace(" ", "").isalpha():  # Ensure name contains only alphabetic characters
+            self.error_label = ttk.Label(self.loginWindow, text="Select a user", foreground="red",
+                                         font=("Comic Sans MS", 10))
+            self.error_label.place(x=250, y=370)
+            return
+
+        # Clear any existing error message
+        if hasattr(self, "error_label") and self.error_label:
+            self.error_label.destroy()
+
+        # Fetch tasks
+        tasks = fn.get_tasks(username, duration)
+
+        # Clear the task frame before adding new tasks
+        for widget in self.task_frame.winfo_children():
+            widget.destroy()
+
+        # Add a scrollbar for vertical scrolling
+        canvas = tk.Canvas(self.task_frame)
+        scrollbar = ttk.Scrollbar(self.task_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        if tasks:
+            total_duration = sum(task[3] for task in tasks)  # Sum of task durations for bar width proportion
+            max_width = 500  # Maximum width for a task bar
+
+            self.task_vars = []  # List to store task names and their BooleanVars
+
+            for task in tasks:
+                task_name = task[1]  # Assuming task name is at index 1
+                task_duration = task[3]  # Assuming duration is at index 3
+
+                # Create a frame for each task row
+                task_row = ttk.Frame(scrollable_frame)
+                task_row.pack(fill="x", pady=5, padx=10)
+
+                # Initialize the BooleanVar to False (unchecked by default)
+                var = tk.BooleanVar(value=False)  # Ensure no indeterminate state
+                self.task_vars.append((task_name, var))
+
+                # Create the Checkbutton and bind using functools.partial
+                task_checkbox = ttk.Checkbutton(
+                    task_row,
+                    variable=var,
+                    command=partial(self.done, task, var)
+                )
+                task_checkbox.pack(side="left", padx=10)
+
+                # Canvas for task bar
+                task_canvas = tk.Canvas(task_row, height=30, width=max_width, bg="white")
+                task_canvas.pack(side="left", padx=10, fill="x", expand=True)
+
+                # Draw a proportional bar for the task
+                task_canvas.create_rectangle(0, 0, max_width, 30, fill="blue")
+
+                # Add task name as text inside the bar
+                task_canvas.create_text(
+                    max_width / 2, 15, text=task_name, fill="white", anchor="center", font=("Arial", 12, "bold")
+                )
+        else:
+            no_task_label = ttk.Label(scrollable_frame, text="No tasks available for the specified duration.",
+                                      foreground="red")
+            no_task_label.pack(pady=10)
+
+        tasks = db.get_user_tasks(username)
+
+        # Update the progress bar with the new completion percentage
+        done_counter = sum(1 for task in tasks if task[6] == 1)  # Count completed tasks
+        total_counter = len(tasks)  # Count total tasks
+
+        if total_counter > 0:
+            completion_percentage = (done_counter / total_counter) * 100
+        else:
+            completion_percentage = 0  # Avoid division by zero when there are no tasks
+
+        self.progress_canvas.delete("all")  # Clear the canvas
+        self.draw_custom_progress_bar(self.progress_canvas, 300, 30, completion_percentage)

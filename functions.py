@@ -78,7 +78,10 @@ def build_task_graph_with_prerequisites(teamname):
     tasks = db.get_team_tasks(teamname)
 
     # Add nodes and directed edges
-    for taskname, prerequisite in tasks:
+    for task in tasks:
+        taskname = task[1]
+        prerequisite = task[5]
+
         task_graph.add_node(taskname)
         if prerequisite:
             task_graph.add_edge(prerequisite, taskname)  # prerequisite → taskname
@@ -86,19 +89,26 @@ def build_task_graph_with_prerequisites(teamname):
     return task_graph
 
 
-# Step 3: Generate MST and Cluster Tasks
 def cluster_tasks(graph):
-    mst = nx.minimum_spanning_tree(graph)
+    """
+    Clusters tasks in a graph based on connected components.
 
-    # For clustering, cut edges with high weights
-    # Example: Removing edges with weights > threshold
-    threshold = 10
-    edges_to_remove = [(u, v) for u, v, w in mst.edges(data=True) if w['weight'] > threshold]
-    mst.remove_edges_from(edges_to_remove)
+    Args:
+        graph (nx.Graph or nx.DiGraph): The graph representing tasks and dependencies.
 
-    # Find clusters as connected components
-    clusters = list(nx.connected_components(mst))
-    return mst, clusters
+    Returns:
+        clusters (list of sets): Each set represents a cluster of tasks.
+    """
+    # For directed graphs, convert to undirected to find clusters
+    if isinstance(graph, nx.DiGraph):
+        undirected_graph = graph.to_undirected()
+    else:
+        undirected_graph = graph
+
+    # Find clusters (connected components)
+    clusters = list(nx.connected_components(undirected_graph))
+
+    return clusters
 
 
 # Step 4: Schedule Tasks Within Each Cluster
@@ -109,4 +119,7 @@ def schedule_tasks(clusters, graph):
         print(f"Schedule for cluster: {sorted_tasks}")
 
 def get_user_from_team_tasks(teamname, username, duration):
-    pass
+    task_graph = build_task_graph_with_prerequisites(teamname)
+    clusters =  cluster_tasks(task_graph)
+    for cluster in clusters:
+        print(cluster)
