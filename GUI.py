@@ -6,6 +6,8 @@ import functions as fn
 from tkinter import IntVar, Canvas
 from functools import partial #for mark as complete
 from PIL import Image, ImageTk  # For handling images
+import winsound
+
 
 
 
@@ -393,7 +395,9 @@ class GUI():
         elif self.remaining_time == 0:
             self.is_timer_running = False
             self.timer_label.config(text="Time's up!")
-            # You can add a sound or notification here.
+            # Play a system-defined alarm sound
+            winsound.Beep(1000, 500)  # Frequency: 1000 Hz, Duration: 500 ms
+            winsound.Beep(1200, 500)
 
     def update_timer_display(self):
         """Manually update the timer display."""
