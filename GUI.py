@@ -705,6 +705,11 @@ class GUI():
         self.duration_entry = ttk.Entry(self.loginWindow)
         self.duration_entry.place(x=290, y=20, width=100)
 
+        # List all tasks Button
+        self.list_button = ttk.Button(self.loginWindow, text="List all tasks", bootstyle="primary",
+                                      command=lambda: self.list_team(teamname))
+        self.list_button.place(x=520, y=20)
+
         # Dropdown for Each Person
         try:
             user_list = db.get_team_users(teamname) or []  # Ensure user_list is valid
@@ -995,3 +1000,85 @@ class GUI():
                 db.edit_team_task(task[0], task[1], task[2], task[3], task[4], task[5], 0)
         except Exception as e:
             print(f"Error in done function: {e}")
+
+    def list_team(self, teamname):
+        # Clear any existing error message
+        if hasattr(self, "error_label") and self.error_label:
+            self.error_label.destroy()
+
+        # Fetch tasks
+        team_tasks = db.get_team_tasks(teamname)
+
+        # Clear the task frame before adding new tasks
+        for widget in self.task_frame.winfo_children():
+            widget.destroy()
+
+        # Add a scrollbar for vertical scrolling
+        canvas = tk.Canvas(self.task_frame)
+        scrollbar = ttk.Scrollbar(self.task_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        if team_tasks:
+            for task in team_tasks:
+                task_name = task[1]  # Assuming task name is at index 1
+                task_done = task[6] == 1  # Assuming completion status is at index 6 (1 means done)
+
+                # Create a frame for each task row
+                task_row = ttk.Frame(scrollable_frame)
+                task_row.pack(fill="x", pady=5, padx=10)
+
+                # Task Name Label
+                task_label = ttk.Label(task_row, text=task_name, font=("Arial", 12))
+                task_label.pack(side="left", padx=10)
+
+                # Delete Button
+                delete_button = ttk.Button(
+                    task_row, text="Delete", bootstyle="danger",
+                    command=lambda t=task_name: self.delete_team_task(teamname, t)
+                )
+                delete_button.pack(side="right", padx=10)
+
+                # Completion Checkbox (read-only)
+                task_checkbox = ttk.Checkbutton(
+                    task_row,
+                    text="Completed",
+                    variable=tk.BooleanVar(value=task_done),
+                    state="disabled"
+                )
+                task_checkbox.pack(side="right", padx=10)
+        else:
+            no_task_label = ttk.Label(scrollable_frame, text="No tasks available.",
+                                      foreground="red")
+            no_task_label.pack(pady=10)
+
+        # Update the progress bar with the new completion percentage
+        tasks = db.get_team_tasks(teamname)
+        done_counter = sum(1 for task in tasks if task[6] == 1)  # Count completed tasks
+        total_counter = len(tasks)  # Count total tasks
+
+        if total_counter > 0:
+            completion_percentage = (done_counter / total_counter) * 100
+        else:
+            completion_percentage = 0  # Avoid division by zero when there are no tasks
+
+        self.progress_canvas.delete("all")  # Clear the canvas
+        self.draw_custom_progress_bar(self.progress_canvas, 300, 30, completion_percentage)
+
+    def delete_team_task(self, teamname, taskname):
+        """Delete a task and refresh the task list."""
+        result = db.delete_team_task(teamname, taskname)
+        if result:
+            self.list_team(teamname)  # Refresh the task list
+        else:
+            print(f"Failed to delete task '{taskname}'.")
