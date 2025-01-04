@@ -479,8 +479,6 @@ class GUI():
         scrollbar.pack(side="right", fill="y")
 
         if user_tasks:
-            max_width = 500  # Maximum width for a task bar
-
             for task in user_tasks:
                 task_name = task[1]  # Assuming task name is at index 1
                 task_done = task[6] == 1  # Assuming completion status is at index 6 (1 means done)
@@ -489,36 +487,32 @@ class GUI():
                 task_row = ttk.Frame(scrollable_frame)
                 task_row.pack(fill="x", pady=5, padx=10)
 
-                # Initialize the BooleanVar to reflect the task's completion status
-                var = tk.BooleanVar(value=task_done)
+                # Task Name Label
+                task_label = ttk.Label(task_row, text=task_name, font=("Arial", 12))
+                task_label.pack(side="left", padx=10)
 
-                # Create a read-only Checkbutton
+                # Delete Button
+                delete_button = ttk.Button(
+                    task_row, text="Delete", bootstyle="danger",
+                    command=lambda t=task_name: self.delete_task(username, t)
+                )
+                delete_button.pack(side="right", padx=10)
+
+                # Completion Checkbox (read-only)
                 task_checkbox = ttk.Checkbutton(
                     task_row,
-                    variable=var,
-                    state="disabled"  # Make it read-only
+                    text="Completed",
+                    variable=tk.BooleanVar(value=task_done),
+                    state="disabled"
                 )
-                task_checkbox.pack(side="left", padx=10)
-
-                # Canvas for task bar
-                task_canvas = tk.Canvas(task_row, height=30, width=max_width, bg="white")
-                task_canvas.pack(side="left", padx=10, fill="x", expand=True)
-
-                # Draw a proportional bar for the task
-                task_canvas.create_rectangle(0, 0, max_width, 30, fill="blue")
-
-                # Add task name as text inside the bar
-                task_canvas.create_text(
-                    max_width / 2, 15, text=task_name, fill="white", anchor="center", font=("Arial", 12, "bold")
-                )
+                task_checkbox.pack(side="right", padx=10)
         else:
-            no_task_label = ttk.Label(scrollable_frame, text="No tasks available for the specified duration.",
+            no_task_label = ttk.Label(scrollable_frame, text="No tasks available.",
                                       foreground="red")
             no_task_label.pack(pady=10)
 
-        tasks = db.get_user_tasks(username)
-
         # Update the progress bar with the new completion percentage
+        tasks = db.get_user_tasks(username)
         done_counter = sum(1 for task in tasks if task[6] == 1)  # Count completed tasks
         total_counter = len(tasks)  # Count total tasks
 
@@ -529,6 +523,15 @@ class GUI():
 
         self.progress_canvas.delete("all")  # Clear the canvas
         self.draw_custom_progress_bar(self.progress_canvas, 300, 30, completion_percentage)
+
+    def delete_task(self, username, taskname):
+        """Delete a task and refresh the task list."""
+        result = db.delete_user_task(username, taskname)
+        if result:
+            print(f"Task '{taskname}' deleted successfully.")
+            self.list_user(username)  # Refresh the task list
+        else:
+            print(f"Failed to delete task '{taskname}'.")
 
     def refresh_user(self, username, duration):
         # Validate duration input
