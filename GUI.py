@@ -414,6 +414,12 @@ class GUI():
                 self.error_label.grid(row=7, column=0, columnspan=2, pady=5)
                 return
 
+            if name in task_names:
+                self.error_label = ttk.Label(new_window, text="This task is already added to your list", foreground="red",
+                                             font=("Comic Sans MS", 10))
+                self.error_label.grid(row=7, column=0, columnspan=2, pady=5)
+                return
+
             if not priority.isdigit():  # Ensure priority is numeric
                 self.error_label = ttk.Label(new_window, text="Priority must be a positive number!", foreground="red",
                                              font=("Comic Sans MS", 10))
@@ -743,6 +749,12 @@ class GUI():
             # Validate fields
             if not name.replace(" ", "").isalpha():  # Ensure name contains only alphabetic characters
                 self.error_label = ttk.Label(new_window, text="Name must contain only letters!", foreground="red",
+                                             font=("Comic Sans MS", 10))
+                self.error_label.grid(row=7, column=0, columnspan=2, pady=5)
+                return
+
+            if name in task_names:
+                self.error_label = ttk.Label(new_window, text="This task is already added to your list", foreground="red",
                                              font=("Comic Sans MS", 10))
                 self.error_label.grid(row=7, column=0, columnspan=2, pady=5)
                 return

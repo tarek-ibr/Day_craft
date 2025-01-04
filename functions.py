@@ -2,6 +2,8 @@ import tkinter as tk
 import ttkbootstrap as ttk
 import db_functions as db
 import Destroy as ds
+import networkx as nx
+
 
 
 def get_tasks(username, duration):
@@ -67,4 +69,44 @@ def get_tasks(username, duration):
 
 
 def get_shortest_path_to_tasks(username, duration):
+    pass
+
+
+# Step 1: Build Directed Graph
+def build_task_graph_with_prerequisites(teamname):
+    task_graph = nx.DiGraph()
+    tasks = db.get_team_tasks(teamname)
+
+    # Add nodes and directed edges
+    for taskname, prerequisite in tasks:
+        task_graph.add_node(taskname)
+        if prerequisite:
+            task_graph.add_edge(prerequisite, taskname)  # prerequisite → taskname
+
+    return task_graph
+
+
+# Step 3: Generate MST and Cluster Tasks
+def cluster_tasks(graph):
+    mst = nx.minimum_spanning_tree(graph)
+
+    # For clustering, cut edges with high weights
+    # Example: Removing edges with weights > threshold
+    threshold = 10
+    edges_to_remove = [(u, v) for u, v, w in mst.edges(data=True) if w['weight'] > threshold]
+    mst.remove_edges_from(edges_to_remove)
+
+    # Find clusters as connected components
+    clusters = list(nx.connected_components(mst))
+    return mst, clusters
+
+
+# Step 4: Schedule Tasks Within Each Cluster
+def schedule_tasks(clusters, graph):
+    for cluster in clusters:
+        cluster_graph = graph.subgraph(cluster)
+        sorted_tasks = list(nx.topological_sort(cluster_graph))  # Use topological sort for prerequisites
+        print(f"Schedule for cluster: {sorted_tasks}")
+
+def get_user_from_team_tasks(teamname, username, duration):
     pass
