@@ -747,22 +747,37 @@ class GUI():
         # self.canvas = tk.Canvas(self.loginWindow, width=600, height=60, bg="white")
         # self.canvas.place(x=50, y=300)  # Adjust position as needed
 
+        # Pomodoro Timer Section
+        self.pomodoro_frame = ttk.Labelframe(self.loginWindow, text="Pomodoro Timer")
+        self.pomodoro_frame.place(x=20, y=400, width=300, height=150)
+
+        # Timer Display
+        self.timer_label = ttk.Label(self.pomodoro_frame, text="25:00", font=("Arial", 24))
+        self.timer_label.pack(pady=10)
+
+        # Timer Buttons
+        self.start_button = ttk.Button(self.pomodoro_frame, text="Start", bootstyle="success", command=self.start_timer)
+        self.start_button.pack(side="left", padx=10)
+
+        self.pause_button = ttk.Button(self.pomodoro_frame, text="Pause", bootstyle="warning", command=self.pause_timer)
+        self.pause_button.pack(side="left", padx=10)
+
+        self.reset_button = ttk.Button(self.pomodoro_frame, text="Reset", bootstyle="danger", command=self.reset_timer)
+        self.reset_button.pack(side="left", padx=10)
+
         # Performance Section
         self.performance_frame = ttk.Labelframe(self.loginWindow, text="Performance")
-        self.performance_frame.place(x=20, y=400, width=760, height=150)
+        self.performance_frame.place(x=340, y=400, width=440, height=150)
 
         # Placeholder content for performance
         self.performance_label = ttk.Label(self.performance_frame, text="Performance metrics will be shown here.")
         self.performance_label.pack(pady=10)
 
         # Task Completion Rate
-        # Inside the user method or wherever you're creating the performance section
         self.completion_label = ttk.Label(self.performance_frame, text="Task Completion Rate:")
         self.completion_label.pack(pady=5)
 
         # Custom Progress Bar
-
-        # Initialize the canvas for the custom progress bar
         self.progress_canvas = Canvas(self.performance_frame, width=300, height=30, bg="white", highlightthickness=0)
         self.progress_canvas.pack()
 
@@ -781,6 +796,10 @@ class GUI():
         self.logout_button = ttk.Button(self.loginWindow, text="Log Out", bootstyle="danger",
                                         command=self.login_Window)  # Navigate back to login window
         self.logout_button.place(x=20, y=550)
+
+        # Initialize Timer Variables
+        self.is_timer_running = False
+        self.remaining_time = 1500  # Default 25 minutes (in seconds)
 
     def load_team_tasks(self, teamname):
         """Populate the task list with tasks for the team."""
