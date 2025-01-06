@@ -334,6 +334,11 @@ class GUI():
         self.reset_button = ttk.Button(self.pomodoro_frame, text="Reset", bootstyle="danger", command=self.reset_timer)
         self.reset_button.pack(side="left", padx=10)
 
+        # Log Out Button
+        self.logout_button = ttk.Button(self.loginWindow, text="Log Out", bootstyle="danger",
+                                        command=self.login_Window)  # Navigate back to login window
+        self.logout_button.place(x=20, y=550)
+
         # Performance Section
         self.performance_frame = ttk.Labelframe(self.loginWindow, text="Performance")
         self.performance_frame.place(x=340, y=400, width=440, height=150)
@@ -360,10 +365,7 @@ class GUI():
 
         self.draw_custom_progress_bar(self.progress_canvas, 300, 30, (done_counter / total_counter) * 100)
 
-        # Log Out Button
-        self.logout_button = ttk.Button(self.loginWindow, text="Log Out", bootstyle="danger",
-                                        command=self.login_Window)  # Navigate back to login window
-        self.logout_button.place(x=20, y=550)
+
 
         # Initialize Timer Variables
         self.is_timer_running = False
@@ -774,6 +776,11 @@ class GUI():
         self.reset_button = ttk.Button(self.pomodoro_frame, text="Reset", bootstyle="danger", command=self.reset_timer)
         self.reset_button.pack(side="left", padx=10)
 
+        # Log Out Button
+        self.logout_button = ttk.Button(self.loginWindow, text="Log Out", bootstyle="danger",
+                                        command=self.login_Window)  # Navigate back to login window
+        self.logout_button.place(x=20, y=550)
+
         # Performance Section
         self.performance_frame = ttk.Labelframe(self.loginWindow, text="Performance")
         self.performance_frame.place(x=340, y=400, width=440, height=150)
@@ -801,10 +808,7 @@ class GUI():
 
         self.draw_custom_progress_bar(self.progress_canvas, 300, 30, (done_counter / total_counter) * 100)
 
-        # Log Out Button
-        self.logout_button = ttk.Button(self.loginWindow, text="Log Out", bootstyle="danger",
-                                        command=self.login_Window)  # Navigate back to login window
-        self.logout_button.place(x=20, y=550)
+
 
         # Initialize Timer Variables
         self.is_timer_running = False
