@@ -105,6 +105,7 @@ def cluster_tasks(graph):
     return clusters
 
 
+#I didn't do any thing with the duration here because I want to show all the tasks that this member should do but it's very simple to include the duration
 def get_user_from_team_tasks(teamname, username, duration):
     """
     Retrieve tasks for a user from the team's tasks, grouped into clusters.
@@ -177,7 +178,11 @@ def get_user_from_team_tasks(teamname, username, duration):
         sorted_user_task_durations = dict(sorted(sorted_user_task_durations.items(), key=lambda item: item[1]))
 
     user_of_team_tasks = []
+    #total_duration = 0
     for n, t in users_tasks:
+        # for ta in t:
+        #     total_duration += ta[3]
+        # if n == username and total_duration<=duration:
         if n == username:
             for ta in t:
                 user_of_team_tasks.append(ta)
