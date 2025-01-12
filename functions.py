@@ -68,8 +68,6 @@ def get_tasks(username, duration):
     return final_tasks
 
 
-def get_shortest_path_to_tasks(username, duration):
-    pass
 
 def build_task_graph_with_prerequisites(teamname):
     task_graph = nx.DiGraph()
